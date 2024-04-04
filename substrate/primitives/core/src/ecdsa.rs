@@ -221,6 +221,9 @@ impl TraitPair for Pair {
 	fn to_raw_vec(&self) -> Vec<u8> {
 		self.seed().to_vec()
 	}
+
+	// #[cfg(feature = "etf")]
+	// fn acss_recover(&self, _bytes: &[u8]) -> Option<Self> { None }
 }
 
 impl Pair {

@@ -52,4 +52,10 @@ impl RuntimePublic for Public {
 	fn to_raw_vec(&self) -> Vec<u8> {
 		sp_core::crypto::ByteArray::to_raw_vec(self)
 	}
+
+	// #[cfg(feature = "etf")]
+	// fn acss_Recover(&self, pok: &[u8]) -> Option<Self> {
+	// 	// sp_core::bls::acss_recover(self.clone(), pok)
+	// 	None
+	// }
 }

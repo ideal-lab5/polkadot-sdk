@@ -359,7 +359,8 @@ impl Keystore for MemoryKeystore {
 		Ok(sig)
 	}
 
-	#[cfg(all(feature = "bls-experimental", feature = "etf"))]
+	// #[cfg(all(feature = "bls-experimental", feature = "etf"))]
+	#[cfg(feature = "bls-experimental")]
 	fn acss_recover(
 		&self,
 		key_type: KeyTypeId,

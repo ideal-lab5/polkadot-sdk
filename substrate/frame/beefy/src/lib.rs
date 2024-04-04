@@ -136,7 +136,7 @@ pub mod pallet {
 	pub type NextAuthorities<T: Config> =
 		StorageValue<_, BoundedVec<T::BeefyId, T::MaxAuthorities>, ValueQuery>;
 
-	/// publicly verifiable shares for the current round (a resharing)
+	/// publicly verifiable shares for the current round (  resharing)
 	/// here we assume that they follow the  same order as the Authorities storage value vec
 	/// later on we need to modify this to use merkle roots so we can change the ETF authority set
 	#[pallet::storage]

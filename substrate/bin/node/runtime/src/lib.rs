@@ -3012,12 +3012,6 @@ impl_runtime_apis! {
 				.map(sp_consensus_beefy::OpaqueKeyOwnershipProof::new)
 		}
 
-		// #[cfg(feature = "etf")]
-		// fn submit_report_commitment_unsigned_extrinsic(value: u8) -> Option<()> {
-		// 	Beefy::submit_unsigned_commitment(value)
-		// }
-
-		#[cfg(feature = "etf")]
 		fn read_share(at: u8) -> Option<Vec<u8>> {
 			let shares = pallet_beefy::Shares::<Runtime>::get();
 			if at as usize >= shares.len() {
@@ -3043,7 +3037,7 @@ impl_runtime_apis! {
 
 		fn generate_proof(
 			block_numbers: Vec<BlockNumber>,
-			best_known_block_number: Option<BlockNumber>,
+		best_known_block_number: Option<BlockNumber>,
 		) -> Result<(Vec<mmr::EncodableOpaqueLeaf>, mmr::Proof<mmr::Hash>), mmr::Error> {
 			Mmr::generate_proof(block_numbers, best_known_block_number).map(
 				|(leaves, proof)| {

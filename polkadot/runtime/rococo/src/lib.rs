@@ -1270,7 +1270,7 @@ impl paras_sudo_wrapper::Config for Runtime {}
 
 parameter_types! {
 	pub const PermanentSlotLeasePeriodLength: u32 = 365;
-	pub const TemporarySlotLeasePeriodLength: u32 = 5;
+pub const TemporarySlotLeasePeriodLength: u32 = 5;
 	pub const MaxTemporarySlotPerLeasePeriod: u32 = 5;
 }
 
@@ -2065,6 +2065,9 @@ sp_api::impl_runtime_apis! {
 				.map(|p| p.encode())
 				.map(beefy_primitives::OpaqueKeyOwnershipProof::new)
 		}
+
+		// #[cfg(feature = "etf")]
+		// fn read_share(_: u8) -> Option<Vec<u8>> { todo!() }
 	}
 
 	#[api_version(2)]

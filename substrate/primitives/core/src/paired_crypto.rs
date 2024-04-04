@@ -285,6 +285,9 @@ where
 		raw.extend(self.right.to_raw_vec());
 		raw
 	}
+
+	// #[cfg(feature = "etf")]
+	// fn acss_recover(&self, _bytes: &[u8]) -> Option<Self> { None }
 }
 
 // Test set exercising the (ECDSA,BLS12-377) implementation

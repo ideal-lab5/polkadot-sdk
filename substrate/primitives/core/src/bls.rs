@@ -35,6 +35,9 @@ use w3f_bls::{
 	SecretKey, SerializableToBytes, TinyBLS381,
 };
 
+// I dont like this..
+use ark_serialize::CanonicalDeserialize;
+
 /// BLS-377 specialized types
 pub mod bls377 {
 	pub use super::{PUBLIC_KEY_SERIALIZED_SIZE, SIGNATURE_SERIALIZED_SIZE};
@@ -139,7 +142,33 @@ fn derive_hard_junction<T: HardJunctionId>(secret_seed: &Seed, cc: &[u8; 32]) ->
 	(T::ID, secret_seed, cc).using_encoded(sp_crypto_hashing::blake2_256)
 }
 
-impl<T: EngineBLS> Pair<T> {}
+impl<T: EngineBLS> Pair<T> {
+	// #[cfg(feature = "etf")]
+	fn acss_recover(&self, pok_bytes: &[u8]) -> Option<Self> {
+		let mut mutable_self = self.clone();
+		if let Ok(pok) = etf_crypto_primitives::proofs::hashed_el_gamal_sigma::BatchPoK::<T::SignatureGroup>::
+			deserialize_compressed(&pok_bytes[..]) {
+				if let Some(recovered) = DoublePublicKeyScheme::acss_recover(
+					&mut mutable_self.0, 
+					pok
+				) {
+					let secret = w3f_bls::SecretKeyVT(recovered).into_split_dirty();
+					let public = secret.into_public();
+					return Some(Pair(w3f_bls::Keypair {
+						secret, public,
+					}));
+				}
+				// {
+				// // todo: omit the blinding secret for now
+				// // return Some(Pair(w3f_bls::SecretKey::from(recovered.0)));
+				// let secret = w3f_bls::SecretKey::from_seed(recovered.0);
+				// let public = secret.into_public();
+				// return Some(Pair(w3f_bls::Keypair { secret, public }))
+			// }
+		}
+		None
+	}
+}
 
 impl<T: BlsBound> TraitPair for Pair<T> {
 	type Seed = Seed;
@@ -191,19 +220,31 @@ impl<T: BlsBound> TraitPair for Pair<T> {
 		Self::Signature::unchecked_from(r)
 	}
 	
-	#[cfg(feature = "etf")]
-	fn acss_recover(&self, pok_bytes: &[u8]) -> Option<Self> {
-		if let Some(pok) = BatchPoK::deserialize_compressed(&pok_bytes[..]) {
-			if let Some(recovered) = DoublePublicKeyScheme::recover(
-				&mut mutable_self.0, 
-				&pok_bytes
-			) {
-				// todo: omit the blinding secret for now
-				return Some(Pair(w3f_bls::SecretKey::from(recovered.0)));
-			}
-		}
-		None
-	}
+	// // #[cfg(feature = "etf")]
+	// fn acss_recover(&self, pok_bytes: &[u8]) -> Option<Self> {
+	// 	let mut mutable_self = self.clone();
+	// 	if let Ok(pok) = etf_crypto_primitives::proofs::hashed_el_gamal_sigma::BatchPoK::<T::SignatureGroup>::
+	// 		deserialize_compressed(&pok_bytes[..]) {
+	// 			if let Some(recovered) = DoublePublicKeyScheme::acss_recover(
+	// 				&mut mutable_self.0, 
+	// 				pok
+	// 			) {
+	// 				let secret = w3f_bls::SecretKeyVT(recovered).into_split_dirty();
+	// 				let public = secret.into_public();
+	// 				return Some(Pair(w3f_bls::Keypair {
+	// 					secret, public,
+	// 				}));
+	// 			}
+	// 			// {
+	// 			// // todo: omit the blinding secret for now
+	// 			// // return Some(Pair(w3f_bls::SecretKey::from(recovered.0)));
+	// 			// let secret = w3f_bls::SecretKey::from_seed(recovered.0);
+	// 			// let public = secret.into_public();
+	// 			// return Some(Pair(w3f_bls::Keypair { secret, public }))
+	// 		// }
+	// 	}
+	// 	None
+	// }
 
 	fn verify<M: AsRef<[u8]>>(sig: &Self::Signature, message: M, pubkey: &Self::Public) -> bool {
 		let pubkey_array: [u8; PUBLIC_KEY_SERIALIZED_SIZE] =
@@ -250,6 +291,7 @@ mod tests {
 	use crate::crypto::Ss58Codec;
 	use crate::crypto::DEV_PHRASE;
 	use bls377::{Pair, Signature};
+	use ark_std::test_rng;
 
 	#[test]
 	fn default_phrase_should_be_used() {
@@ -427,5 +469,35 @@ mod tests {
 		assert!(deserialize_signature("\"Not an actual signature.\"").is_err());
 		// Poorly-sized
 		assert!(deserialize_signature("\"abc123\"").is_err());
+	}
+
+	use ark_serialize::CanonicalSerialize;
+	use ark_std::{UniformRand};
+	use ark_bls12_377::{Fr, G1Projective as G1};
+	use rand::rngs::OsRng;
+
+	#[test]
+	// #[cfg(feature = "etf")]
+	fn test_acss_recovery_works() {
+		let initial_authority_pair = Pair::from_seed(b"12345678901234567890123456789012");
+		let initial_pubkey = initial_authority_pair.public();
+		let pkg1_compressed: [u8;48] = initial_pubkey.0[0..48].try_into().unwrap();
+		let pkg1 = G1::deserialize_compressed(&pkg1_compressed[..]).unwrap();
+
+		let msk = Fr::rand(&mut test_rng());
+		let msk_prime = Fr::rand(&mut test_rng());
+		let genesis_resharing = etf_crypto_primitives::dpss::acss::HighThresholdACSS::reshare(
+			msk, 
+			msk_prime, 
+			&vec![pkg1],
+			1u8,
+			&mut OsRng,
+		);
+
+		let pok = genesis_resharing[0].clone().1;
+		let mut pok_bytes = Vec::new();
+		pok.serialize_compressed(&mut pok_bytes).unwrap();
+		let kp = initial_authority_pair.acss_recover(&pok_bytes);
+		assert!(kp.is_some());
 	}
 }

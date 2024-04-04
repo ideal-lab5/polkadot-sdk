@@ -313,6 +313,7 @@ where
 			comms,
 			links,
 			pending_justifications,
+			etf_session_key: None,
 		}
 	}
 

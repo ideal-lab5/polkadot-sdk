@@ -267,6 +267,9 @@ impl TraitPair for Pair {
 	fn to_raw_vec(&self) -> Vec<u8> {
 		self.0.secret.to_bytes().to_vec()
 	}
+
+	// #[cfg(feature = "etf")]
+	// fn acss_recover(&self, _bytes: &[u8]) -> Option<Self> { None }
 }
 
 #[cfg(feature = "std")]

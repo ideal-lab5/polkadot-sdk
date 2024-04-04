@@ -173,6 +173,10 @@ macro_rules! app_crypto_pair_common {
 			fn to_raw_vec(&self) -> $crate::Vec<u8> {
 				self.0.to_raw_vec()
 			}
+
+			// fn acss_recover(&self, bytes: &[u8]) -> Option<Self> {
+			// 	self.0.acss_recover(bytes)
+			// }
 		}
 
 		impl $crate::AppCrypto for Pair {
@@ -227,6 +231,18 @@ macro_rules! app_crypto_pair_functions_if_full_crypto {
 		}
 	};
 }
+
+// /// Implements functions for the `Pair` trait when `feature = "etf"` is enabled.
+// #[doc(hidden)]
+// #[cfg(feature = "etf")]
+// #[macro_export]
+// macro_rules! app_crypto_pair_functions_if_full_crypto {
+// 	($pair:ty) => {
+// 		fn acss_recover(&self, bytes: &[u8]) -> Option<Self> {
+// 			self.0.acss_recover(msg)
+// 		}
+// 	};
+// }
 
 #[doc(hidden)]
 #[cfg(not(feature = "full_crypto"))]

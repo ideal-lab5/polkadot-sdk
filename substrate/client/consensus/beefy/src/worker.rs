@@ -391,6 +391,10 @@ pub(crate) struct BeefyWorker<B: Block, BE, P, RuntimeApi, S> {
 	pub persisted_state: PersistedState<B>,
 	/// BEEFY voter metrics
 	pub metrics: Option<VoterMetrics>,
+
+	/// the etf session key, derived using the ACSS recover protocol
+	/// TODO: make this generic
+	pub etf_session_key: Option<sp_core::bls377::Public>
 }
 
 impl<B, BE, P, R, S> BeefyWorker<B, BE, P, R, S>
@@ -685,28 +689,6 @@ where
 
 	/// Decide if should vote, then vote.. or don't..
 	fn try_to_vote(&mut self) -> Result<(), Error> {
-
-		// let hash = self
-		// 	.backend
-		// 	.blockchain()
-		// 	.expect_block_hash_from_id(&BlockId::Number(self.best_grandpa_block()))
-		// 	.map_err(|err| {
-		// 		let err_msg = format!(
-		// 			"Couldn't get hash for block #{:?} (error: {:?}), skipping vote..",
-		// 			self.best_grandpa_block(), err
-		// 		);
-		// 		Error::Backend(err_msg)
-		// 	}).unwrap();
-		// info!(
-		// 	target: LOG_TARGET,
-		// 	"************************ ETF: TRY TO VOTE",
-		// );
-		// self.runtime
-		// 	.runtime_api()
-		// 	.submit_report_commitment_unsigned_extrinsic(
-		// 		hash,
-		// 		1u8
-		// );
 		// Vote if there's now a new vote target.
 		if let Some(target) = self.voting_oracle().voting_target() {
 			metric_set!(self.metrics, beefy_should_vote_on, target);
@@ -770,6 +752,19 @@ where
 			);
 			return Ok(())
 		};
+
+		// produce signature using ETF_KEY_TYPE 
+		// sig message = block_number
+		// let etf_signature = match self.key_store.sign()
+		// if let Some(key) = self.etf_session_key {
+		// 	let extract = self.key_store.extract(key, &rounds.encode());
+		// 	info!(
+		// 		target: LOG_TARGET,
+		// 		"CALCULATED IBE EXTRACT, GOT {:?}",
+		// 		extract
+		// 	);
+		// }
+		// and use that as the Commitment payload
 
 		let commitment = Commitment { payload, block_number: target_number, validator_set_id };
 		let encoded_commitment = commitment.encode();
@@ -870,28 +865,44 @@ where
 
 		let rounds = self.persisted_state.voting_oracle.active_rounds().unwrap();
 
-		// #[cfg(all(feature = "etf", feature = "bls-experimental"))]
+		// TODO: Check keystore for ETF key first
+		// try to run the ACSS.Recover algorithm on startup if there is no ETF secret in the keystore
+		// #[cfg(feature = "etf")]
 		if let Some(id) = self.key_store.authority_id(rounds.validators()) {
 			info!(target: LOG_TARGET, "🎲 Local authority id: {:?}", id);
 			if let Some(Some(validator_set)) = runtime_api.validator_set(hash).ok() {
 				let idx = validator_set.validators().iter().position(|r| r.eq(&id)).unwrap();
 				info!(target: LOG_TARGET, "🎲 Found index: {:?}", idx);
 				if let Some(Some(pok_bytes)) = runtime_api.read_share(hash, idx as u8).ok() {
-					let pok = 
-						etf_crypto_primitives::proofs::hashed_el_gamal_sigma::
-							BatchPoK::<ark_bls12_377::G1Projective>::
-								deserialize_compressed(&pok_bytes[..]).unwrap();
-					info!(target: LOG_TARGET, "🎲 Found pok: {:?}", pok);
-
-					let pubkey = self.key_store.recover(
-						&id, 
-						&pok_bytes,
-					);
 					info!(
 						target: LOG_TARGET, 
-						"🎲 ACSS Recovery found public key commitment: {:?}", 
-						pubkey,
+						"🎲 Found share: {:?}",
+						pok_bytes.clone(),
 					);
+					// let pok = 
+					// 	etf_crypto_primitives::proofs::hashed_el_gamal_sigma::
+					// 		BatchPoK::<ark_bls12_377::G1Projective>::
+					// 			deserialize_compressed(&pok_bytes[..]).unwrap();
+					// info!(target: LOG_TARGET, "🎲 Found pok: {:?}", pok);
+
+					if let Ok(pubkey) = self.key_store.recover(
+						&id, 
+						&pok_bytes,
+					) {
+						// update the etf session key
+						self.etf_session_key = Some(pubkey);
+						info!(
+							target: LOG_TARGET, 
+							"🎲 ACSS Recovery found public key commitment: {:?}",
+							pubkey,
+						);
+						// let extract = self.key_store.extract(&pubkey, &b"".to_vec());
+						// info!(
+						// 	target: LOG_TARGET,
+						// 	"CALCULATED IBE EXTRACT, GOT {:?}",
+						// extract
+						// );
+					}
 				}
 			}
 		}

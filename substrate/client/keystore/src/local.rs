@@ -113,29 +113,29 @@ impl LocalKeystore {
 		Ok(signature)
 	}
 
-	/// run the ACSS recovery algorithm
-	/// outputs the public key  (commitment) to two secrets
-	#[cfg(feature = "etf")]
-	fn acss_recover<T: CorePair>(
-		&self, 
-		key_type: KeyTypeId,
-		public: &T::Public,
-		pok_bytes: &[u8],
-	) -> std::result::Result<Option<T::Public>, TraitError>  {
-		let mut recovered = None;
+	// /// run the ACSS recovery algorithm
+	// /// outputs the public key  (commitment) to two secrets
+	// #[cfg(feature = "etf")]
+	// fn acss_recover<T: CorePair>(
+	// 	&self, 
+	// 	key_type: KeyTypeId,
+	// 	public: &T::Public,
+	// 	pok_bytes: &[u8],
+	// ) -> std::result::Result<Option<T::Public>, TraitError>  {
+	// 	let mut recovered = None;
 
-		#[cfg(feature = "etf")]
-		let recovered = self.0
-			.read()
-			.key_pair_by_type::<T>(public, key_type)?
-			.map(|pair| pair.acss_recover(pok_bytes.clone()));
+	// 	// #[cfg(feature = "etf")]
+	// 	// let recovered = self.0
+	// 	// 	.read()
+	// 	// 	.key_pair_by_type::<T>(public, key_type)?
+	// 	// 	.map(|pair| pair.acss_recover(pok_bytes.clone()));
 
-		if recover.is_some() {
-			self.0.insert_ephemeral_pair(recovered, pok_bytes, key_type);
-		} // else error?
-
-		Ok(recovered.public())
-	}
+	// 	// if recovered.is_some() {
+	// 	// 	self.0.insert_ephemeral_pair(recovered, pok_bytes, key_type);
+	// 	// 	return Ok(recovered.public());
+	// 	// } // else error?
+	// 	Ok(recovererd)
+	// }
 
 
 	fn vrf_sign<T: CorePair + VrfSecret>(
@@ -443,19 +443,38 @@ impl Keystore for LocalKeystore {
 			Ok(sig)
 		}
 
-		// #[cfg(feature = "etf")]
 		fn acss_recover(
 			&self,
 			key_type: KeyTypeId,
 			public: &bls377::Public,
 			pok_bytes: &[u8]
 		) -> std::result::Result<Option<bls377::Public>, TraitError> {
-			let mut out = None;
-			#[cfg(feature = "etf")]
-			let out = self.acss_recover(key_type, public, pok_bytes);
-			Ok(out)
+			// // let mut out: Option<bls377::Public> = None;
+			// // panic!("fuck");
+			// #[cfg(feature = "etf")]
+			panic!("etf is working");
+			// let out = self.acss_recover(key_type, public, pok_bytes);
+			// // #[cfg(feature = "etf")]
+			// // panic!("fuck");
+			// // Ok(out)
+			// out
+			let mut recovered = None;
+
+			let recovered = self.0
+				.read()
+				.key_pair_by_type::<bls377::Public>(public, key_type)?
+				.map(|pair| pair.acss_recover(pok_bytes.clone()));
+
+			// if recovered.is_some() {
+			// 	self.insert_ephemeral_pair(recovered, pok_bytes, key_type);
+			// 	return Ok(recovered.public());
+			// } // else error?
+			Ok(recovered)
 		}
 	}
+
+	
+		
 }
 
 impl Into<KeystorePtr> for LocalKeystore {

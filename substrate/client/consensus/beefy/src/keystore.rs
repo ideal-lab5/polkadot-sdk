@@ -21,6 +21,10 @@ use sp_consensus_beefy::{AuthorityIdBound, BeefyAuthorityId, BeefySignatureHashe
 use sp_core::ecdsa;
 #[cfg(feature = "bls-experimental")]
 use sp_core::bls377;
+
+// #[cfg(all(feature = "bls-experimental", feature = "etf"))]
+use sp_core::crypto::key_types::ETF as ETF_KEY_TYPE;
+
 #[cfg(all(feature = "bls-experimental", feature = "full_crypto"))]
 use sp_core::ecdsa_bls377;
 use sp_crypto_hashing::keccak_256;
@@ -200,7 +204,11 @@ impl<AuthorityId: AuthorityIdBound> BeefyKeystore<AuthorityId> {
 		BeefyAuthorityId::<BeefySignatureHasher>::verify(public, sig, message)
 	}
 
-	#[cfg(all(feature = "bls-experimental", feature = "etf"))]
+	/// The ACSS recover function
+	/// verify and recover a keypair from a proof of knowledge
+	/// stores the recovered key in the keystore
+	/// returns the public key if it could be recovered, error otherwise
+	// #[cfg(feature = "etf")]
 	pub fn recover(
 		&self, 
 		public: &AuthorityId,
@@ -215,15 +223,52 @@ impl<AuthorityId: AuthorityIdBound> BeefyKeystore<AuthorityId> {
 			bls377::Public::try_from(public.as_slice()).unwrap();
 		
 		if let Some(Some(pubkey)) = store.acss_recover(
-			BEEFY_KEY_TYPE, 
+			ETF_KEY_TYPE, 
 			&public, 
 			pok
 		).ok() {
+			info!("ETF: ACSS Recover worked, found a pubkey");
+			// Q: should I convert this to an AuthorityId? how?
 			return Ok(pubkey);
 		}
+
+		info!("ETF: ACSS Recover failed: no pubkey found");
 		Err(error::Error::Signature(format!(
 			"invalid signature [] for key {:?}", public
 		)))
+	}
+
+	/// The IBE "Extract" function
+	/// produces a BLS signature on the message using ETF keys
+	// #[cfg(all(feature = "bls-experimental", feature = "etf"))]
+	pub fn extract(
+		&self,
+		public: &bls377::Public,
+		message: &[u8],
+	) -> Result<<AuthorityId as RuntimeAppPublic>::Signature, error::Error> {
+		let store = self.0.clone().ok_or_else(|| error::Error::Keystore("no Keystore".into()))
+			.map_err(|_| ())
+			.unwrap();
+		// let public: bls377::Public =
+		// 	bls377::Public::try_from(public.as_slice()).unwrap();
+		let sig = store
+			.bls377_sign(ETF_KEY_TYPE, &public, &message)
+			.map_err(|e| error::Error::Keystore(e.to_string()))?
+			.ok_or_else(|| error::Error::Signature("bls377_sign()  failed".to_string()))?;
+		let mut signature_byte_array: &[u8] = sig.as_ref();
+		// sig_ref.to_vec()
+		//check that `sig` has the expected result type
+		let signature = <AuthorityId as RuntimeAppPublic>::Signature::decode(
+			&mut signature_byte_array,
+		)
+		.map_err(|_| {
+			error::Error::Signature(format!(
+				"invalid signature {:?} for key {:?}",
+				signature_byte_array, public
+			))
+		})?;
+
+		Ok(signature)
 	}
 }
 

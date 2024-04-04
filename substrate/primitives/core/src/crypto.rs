@@ -709,6 +709,9 @@ mod dummy {
 		fn to_raw_vec(&self) -> Vec<u8> {
 			Default::default()
 		}
+
+		// #[cfg(feature = "etf")]
+		// fn acss_recover(&self, _bytes: &[u8]) -> Option<Self> { None }
 	}
 }
 
@@ -961,8 +964,8 @@ pub trait Pair: CryptoType + Sized {
 	/// Return a vec filled with raw data.
 	fn to_raw_vec(&self) -> Vec<u8>;
 
-	#[cfg(feature = "etf")]
-	fn acss_recover(&self, pok: &[u8]);
+	// #[cfg(feature = "etf")]
+	// fn acss_recover(&self, pok: &[u8]) -> Option<Self>;
 }
 
 /// One type is wrapped by another.
@@ -1130,6 +1133,8 @@ pub mod key_types {
 	pub const STATEMENT: KeyTypeId = KeyTypeId(*b"stmt");
 	/// Key type for Mixnet module, used to sign key-exchange public keys. Identified as `mixn`.
 	pub const MIXNET: KeyTypeId = KeyTypeId(*b"mixn");
+	/// A key type for ETF Finality, identified as `etf`
+	pub const ETF: KeyTypeId = KeyTypeId(*b"etfn");
 	/// A key type ID useful for tests.
 	pub const DUMMY: KeyTypeId = KeyTypeId(*b"dumy");
 }
@@ -1295,6 +1300,12 @@ mod tests {
 		fn to_raw_vec(&self) -> Vec<u8> {
 			vec![]
 		}
+
+		
+		// #[cfg(feature = "etf")]
+		// fn acss_recover(&self, pok_bytes: &[u8]) -> Option<Self> {
+		// 	None
+		// }
 	}
 
 	#[test]
