@@ -69,7 +69,7 @@ bandersnatch_vrfs = { git = "https://github.com/w3f/ring-vrf", rev = "e9782f9", 
 # should fold this into the etf crypto primitives instead?
 ark-serialize = { version = "0.4.0", default-features = false} 
 ark-bls12-377 = { version = "0.4.0", features = ["curve"], default-features = false } 
-etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "dpss-noscale", default-features = false }
+etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "dpss-noscale", default-features = false, optional = true}
 
 [dev-dependencies]
 criterion = "0.4.0"
@@ -135,6 +135,7 @@ std = [
 	"w3f-bls?/std",
 	"zeroize/alloc",
 	"zeroize/std",
+	"etf-crypto-primitives?/std"
 ]
 
 # Serde support without relying on std features.
@@ -161,7 +162,7 @@ full_crypto = [
 # This feature adds BLS crypto primitives.
 # It should not be used in production since the implementation and interface may still
 # be subject to significant changes.
-bls-experimental = ["w3f-bls"]
+bls-experimental = ["w3f-bls", "etf-crypto-primitives"]
 
 # This feature adds Bandersnatch crypto primitives.
 # It should not be used in production since the implementation and interface may still

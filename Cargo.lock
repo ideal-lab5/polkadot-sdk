@@ -20099,6 +20099,7 @@ dependencies = [
  "serde_json",
  "soketto",
  "sp-api",
+ "sp-application-crypto",
  "sp-authority-discovery",
  "sp-blockchain",
  "sp-consensus",

@@ -99,7 +99,7 @@ sc-offchain = { path = "../../../client/offchain" }
 etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "dpss-noscale" }
 ark-std = { version = "0.4.0"}
 ark-serialize = { version = "0.4.0"}
-ark-bls12-377 = { version = "0.4.0", features = ["curve"], default-features = false } 
+ark-bls12-377 = { version = "0.4.0", features = ["curve"]  } 
 # sp-application-crypto = { path = "../../../primitives/application-crypto" }
 
 
@@ -150,6 +150,7 @@ wait-timeout = "0.2"
 substrate-rpc-client = { path = "../../../utils/frame/rpc/client" }
 pallet-timestamp = { path = "../../../frame/timestamp" }
 substrate-cli-test-utils = { path = "../../../test-utils/cli" }
+sp-application-crypto = { path = "../../../primitives/application-crypto" }
 
 wat = "1.0"
 frame-support = { path = "../../../frame/support" }

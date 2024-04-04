@@ -769,9 +769,3 @@ sp_core::generate_feature_enabled_macro!(
 	feature = "bls-experimental",
 	$
 );
-
-sp_core::generate_feature_enabled_macro!(
-	etf_enabled,
-	feature = "etf",
-	$
-);

@@ -460,10 +460,10 @@ impl Keystore for LocalKeystore {
 			// out
 			let mut recovered = None;
 
-			let recovered = self.0
-				.read()
-				.key_pair_by_type::<bls377::Public>(public, key_type)?
-				.map(|pair| pair.acss_recover(pok_bytes.clone()));
+			// let recovered = self.0
+			// 	.read()
+			// 	.key_pair_by_type::<bls377::Public>(public, key_type)?
+			// 	.map(|pair| pair.acss_recover(pok_bytes.clone()));
 
 			// if recovered.is_some() {
 			// 	self.insert_ephemeral_pair(recovered, pok_bytes, key_type);
