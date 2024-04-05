@@ -96,12 +96,12 @@ sc-sysinfo = { path = "../../../client/sysinfo" }
 sc-storage-monitor = { path = "../../../client/storage-monitor" }
 sc-offchain = { path = "../../../client/offchain" }
 
+# ETF specific dependencies
 etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "dpss-noscale" }
 ark-std = { version = "0.4.0"}
 ark-serialize = { version = "0.4.0"}
 ark-bls12-377 = { version = "0.4.0", features = ["curve"]  } 
-# sp-application-crypto = { path = "../../../primitives/application-crypto" }
-
+sp-application-crypto = { path = "../../../primitives/application-crypto" }
 
 # frame dependencies
 frame-benchmarking = { path = "../../../frame/benchmarking" }
@@ -150,7 +150,6 @@ wait-timeout = "0.2"
 substrate-rpc-client = { path = "../../../utils/frame/rpc/client" }
 pallet-timestamp = { path = "../../../frame/timestamp" }
 substrate-cli-test-utils = { path = "../../../test-utils/cli" }
-sp-application-crypto = { path = "../../../primitives/application-crypto" }
 
 wat = "1.0"
 frame-support = { path = "../../../frame/support" }
@@ -182,6 +181,7 @@ try-runtime-cli = { path = "../../../utils/frame/try-runtime/cli", optional = tr
 sc-cli = { path = "../../../client/cli", optional = true }
 pallet-balances = { path = "../../../frame/balances" }
 sc-storage-monitor = { path = "../../../client/storage-monitor" }
+sp-application-crypto = { path = "../../../primitives/application-crypto" }
 
 [features]
 default = ["cli"]

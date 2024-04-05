@@ -144,7 +144,8 @@ fn derive_hard_junction<T: HardJunctionId>(secret_seed: &Seed, cc: &[u8; 32]) ->
 
 impl<T: EngineBLS> Pair<T> {
 	// #[cfg(feature = "etf")]
-	fn acss_recover(&self, pok_bytes: &[u8]) -> Option<Self> {
+	pub fn acss_recover(&self, pok_bytes: &[u8]) -> Option<Self> {
+		// panic!("lets check...");
 		let mut mutable_self = self.clone();
 		if let Ok(pok) = etf_crypto_primitives::proofs::hashed_el_gamal_sigma::BatchPoK::<T::SignatureGroup>::
 			deserialize_compressed(&pok_bytes[..]) {
@@ -158,13 +159,6 @@ impl<T: EngineBLS> Pair<T> {
 						secret, public,
 					}));
 				}
-				// {
-				// // todo: omit the blinding secret for now
-				// // return Some(Pair(w3f_bls::SecretKey::from(recovered.0)));
-				// let secret = w3f_bls::SecretKey::from_seed(recovered.0);
-				// let public = secret.into_public();
-				// return Some(Pair(w3f_bls::Keypair { secret, public }))
-			// }
 		}
 		None
 	}

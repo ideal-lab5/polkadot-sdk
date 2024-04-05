@@ -756,7 +756,7 @@ pub trait Misc {
 
 #[cfg(feature = "std")]
 sp_externalities::decl_extension! {
-	/// Extension to signal to [`crypt::ed25519_verify`] to use the dalek crate.
+	/// Extension to signal to [`crypto::ed25519_verify`] to use the dalek crate.
 	///
 	/// The switch from `ed25519-dalek` to `ed25519-zebra` was a breaking change.
 	/// `ed25519-zebra` is more permissive when it comes to the verification of signatures.

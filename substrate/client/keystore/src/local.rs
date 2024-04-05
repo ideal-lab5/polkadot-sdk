@@ -449,27 +449,24 @@ impl Keystore for LocalKeystore {
 			public: &bls377::Public,
 			pok_bytes: &[u8]
 		) -> std::result::Result<Option<bls377::Public>, TraitError> {
-			// // let mut out: Option<bls377::Public> = None;
-			// // panic!("fuck");
-			// #[cfg(feature = "etf")]
-			panic!("etf is working");
-			// let out = self.acss_recover(key_type, public, pok_bytes);
-			// // #[cfg(feature = "etf")]
-			// // panic!("fuck");
-			// // Ok(out)
-			// out
-			let mut recovered = None;
-
-			// let recovered = self.0
-			// 	.read()
-			// 	.key_pair_by_type::<bls377::Public>(public, key_type)?
-			// 	.map(|pair| pair.acss_recover(pok_bytes.clone()));
-
+			// panic!("etf is working");
+			let recovered = self.0
+				.read()
+				.key_pair_by_type::<bls377::Pair>(public, key_type)?
+				.map(|pair| pair.acss_recover(pok_bytes.clone()));
+			panic!("{:?}", recovered.unwrap().unwrap().public());
+			// panic!("Recovered {:?}", recovered);
+			// let maybe_pk = if let Some(Some(p)) = recovered {
+			// 	Some(p.public())
+			// } else {
+			// 	None
+			// };
 			// if recovered.is_some() {
 			// 	self.insert_ephemeral_pair(recovered, pok_bytes, key_type);
 			// 	return Ok(recovered.public());
 			// } // else error?
-			Ok(recovered)
+			// Ok(recovered.public())
+			Ok(None)
 		}
 	}
 

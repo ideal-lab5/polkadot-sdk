@@ -35,6 +35,7 @@ use sp_mixnet::types::AuthorityId as MixnetId;
 use sp_runtime::{
 	traits::{IdentifyAccount, Verify, One},
 	Perbill,
+	RuntimeAppPublic,
 };
 
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};

@@ -23,6 +23,8 @@ use kitchensink_runtime::{CheckedExtrinsic, SessionKeys, SignedExtra, UncheckedE
 use node_cli::chain_spec::get_from_seed;
 use node_primitives::{AccountId, Balance, Nonce};
 use sp_core::{ecdsa, ed25519, sr25519};
+// #[cfg(feature = "bls-experimental")]
+use sp_core::bls377;
 use sp_crypto_hashing::blake2_256;
 use sp_keyring::AccountKeyring;
 use sp_runtime::generic::Era;
@@ -65,7 +67,7 @@ pub fn session_keys_from_seed(seed: &str) -> SessionKeys {
 		im_online: get_from_seed::<sr25519::Public>(seed).into(),
 		authority_discovery: get_from_seed::<sr25519::Public>(seed).into(),
 		mixnet: get_from_seed::<sr25519::Public>(seed).into(),
-		beefy: get_from_seed::<ecdsa::Public>(seed).into(),
+		beefy: get_from_seed::<bls377::Public>(seed).into(),
 	}
 }
 
