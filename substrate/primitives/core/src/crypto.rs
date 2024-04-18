@@ -962,7 +962,7 @@ pub trait Pair: CryptoType + Sized {
 	fn to_raw_vec(&self) -> Vec<u8>;
 
 	#[cfg(feature = "etf")]
-	fn acss_recover(&self, pok: &[u8]);
+	fn acss_recover(&self, pok: &[u8], threshold: u8);
 }
 
 /// One type is wrapped by another.

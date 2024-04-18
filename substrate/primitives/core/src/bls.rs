@@ -35,6 +35,11 @@ use w3f_bls::{
 	SecretKey, SerializableToBytes, TinyBLS381,
 };
 
+use etf_crypto_primitives::{
+	dpss::acss::SKWrapper,
+	proofs::hashed_el_gamal_sigma::BatchPoK
+};
+
 use ark_serialize::CanonicalDeserialize;
 
 /// BLS-377 specialized types
@@ -144,15 +149,13 @@ fn derive_hard_junction<T: HardJunctionId>(secret_seed: &Seed, cc: &[u8; 32]) ->
 }
 
 impl<T: EngineBLS> Pair<T> {
-	pub fn acss_recover(&self, pok_bytes: &[u8]) -> Option<Self> {
+	pub fn acss_recover(&self, pok_bytes: &[u8], threshold: u8) -> Option<Self> {
 		let mut mutable_self = self.clone();
-		if let Ok(pok) = etf_crypto_primitives::proofs::hashed_el_gamal_sigma::BatchPoK::<T::SignatureGroup>::
+		if let Ok(pok) = BatchPoK::<T::PublicKeyGroup>::
 			deserialize_compressed(&pok_bytes[..]) {
-			if let Some(recovered) = DoublePublicKeyScheme::acss_recover(
-				&mut mutable_self.0, 
-				pok
-			) {
-				let secret = w3f_bls::SecretKeyVT(recovered).into_split_dirty();
+			let sk = SKWrapper(mutable_self.0.into_vartime());
+			if let Ok(recovered) = sk.recover(pok, threshold) {
+				let secret = w3f_bls::SecretKeyVT(recovered.0).into_split_dirty();
 				let public = secret.into_public();
 				return Some(Pair(w3f_bls::Keypair {
 					secret, public,
@@ -179,7 +182,7 @@ impl<T: BlsBound> TraitPair for Pair<T> {
 
 	fn derive<Iter: Iterator<Item = DeriveJunction>>(
 		&self,
-		path: Iter,
+		path: Iter, 
 		seed: Option<Seed>,
 	) -> Result<(Self, Option<Seed>), DeriveError> {
 		let mut acc: [u8; SECRET_KEY_SERIALIZED_SIZE] =
@@ -435,5 +438,10 @@ mod tests {
 		assert!(deserialize_signature("\"Not an actual signature.\"").is_err());
 		// Poorly-sized
 		assert!(deserialize_signature("\"abc123\"").is_err());
+	}
+
+	#[test]
+	fn acss_recover_works() {
+		
 	}
 }

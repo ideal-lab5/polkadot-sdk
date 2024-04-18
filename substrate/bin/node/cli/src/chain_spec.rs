@@ -18,7 +18,7 @@
 
 //! Substrate chain configurations.
 
-use beefy_primitives::bls_crypto::{AuthorityId as BeefyId, Public as BeefyPublic};
+use beefy_primitives::bls_crypto::AuthorityId as BeefyId;
 use grandpa_primitives::AuthorityId as GrandpaId;
 use kitchensink_runtime::{
 	constants::currency::*, wasm_binary_unwrap, Block, MaxNominations, SessionKeys, StakerStatus,
@@ -33,21 +33,20 @@ use sp_consensus_babe::AuthorityId as BabeId;
 use sp_core::{crypto::UncheckedInto, sr25519, Pair, Public};
 use sp_mixnet::types::AuthorityId as MixnetId;
 use sp_runtime::{
-	traits::{IdentifyAccount, Verify, One},
+	traits::{IdentifyAccount, Verify},
 	Perbill,
 	RuntimeAppPublic,
 };
 
-use w3f_bls::{
-    single_pop_aggregator::SignatureAggregatorAssumingPoP, DoublePublicKeyScheme, EngineBLS, Keypair, Message, PublicKey, PublicKeyInSignatureGroup, Signed, TinyBLS, TinyBLS377,
-};
+use w3f_bls::{EngineBLS, TinyBLS377, SerializableToBytes};
 
 
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::UniformRand;
+use ark_ec::Group;
 
 use rand::rngs::OsRng;
-use etf_crypto_primitives::dpss::acss::HighThresholdACSS;
+use etf_crypto_primitives::dpss::acss::DoubleSecret;
 
 pub use kitchensink_runtime::RuntimeGenesisConfig;
 pub use node_primitives::{AccountId, Balance, Signature};
@@ -333,6 +332,7 @@ fn configure_accounts(
 	Vec<AccountId>,
 	usize,
 	Vec<(AccountId, AccountId, Balance, StakerStatus<AccountId>)>,
+	Vec<u8>,
 	Vec<(BeefyId, BeefyId, Vec<u8>)>
 ) {
 	let mut endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(|| {
@@ -383,54 +383,55 @@ fn configure_accounts(
 
 	let num_endowed_accounts = endowed_accounts.len();
 
-	let genesis_shares = etf_genesis(
+	// Aggregate BLS signature scheme with Signature in G1 for BLS12-377 curve.
+	let (ibe_pp_bytes, genesis_shares) = etf_genesis::<TinyBLS377>(
 		initial_authorities.iter().map(|x| x.7.clone()).collect::<Vec<_>>(),
-		vec!["Alice", "Bob"],
+		vec!["Alice", "Bob", "Charlie"],
 	);
-	(initial_authorities, endowed_accounts, num_endowed_accounts, stakers, genesis_shares)
+	(initial_authorities, endowed_accounts, num_endowed_accounts, stakers, ibe_pp_bytes, genesis_shares)
 }
 
 /// Helper function to prepare initial secrets and resharing for ETF conensus
-/// return a vec of (authority id, resharing, pubkey commitment)
-pub fn etf_genesis(
-	initial_authorities: Vec<BeefyId>, 
-	seeds: Vec<&str>
-) -> Vec<(BeefyId, BeefyId, Vec<u8>)> {
-	let msk = ark_bls12_377::Fr::rand(&mut OsRng);
-	let msk_prime = ark_bls12_377::Fr::rand(&mut OsRng);
+/// return a vec of (authority id, resharing, pubkey commitment) along with ibe public key against the master secret
+pub fn etf_genesis<EB: EngineBLS>(
+		initial_authorities: Vec<BeefyId>, 
+		seeds: Vec<&str>
+	) -> (Vec<u8>, Vec<(BeefyId, BeefyId, Vec<u8>)>) {
+	let msk = EB::Scalar::rand(&mut OsRng);
+	let msk_prime = EB::Scalar::rand(&mut OsRng);
 
-	let genesis_resharing = HighThresholdACSS::reshare(
-		msk, 
-		msk_prime, 
+	let double_secret = DoubleSecret::<EB>(msk, msk_prime);
+
+	let ibe_pub_param = EB::PublicKeyGroup::generator() * msk;
+	let mut ibe_pp_bytes = Vec::new();
+	ibe_pub_param.serialize_compressed(&mut ibe_pp_bytes).unwrap();
+
+	let genesis_resharing = double_secret.reshare(
 		&initial_authorities.iter().map(|authority| {
-			// NO: that's 144 bytes, we only want the first 48 of them (48 + 96 bytes for both keypairs)
-			ark_bls12_377::G1Projective::deserialize_compressed(
-				&authority.to_raw_vec()[..48]
-			).unwrap()
+			w3f_bls::single::PublicKey::<EB>::from_bytes(&authority.to_raw_vec()[..48]).unwrap()
+			// EB::SignatureGroup::deserialize_compressed(
+			// 	// [48 bytes for SigGroup][96 bytes for PubKeyGroup]
+			// 	&authority.to_raw_vec()[..48]
+			// ).unwrap()
 		}).collect::<Vec<_>>(), 
-		initial_authorities.len() as u8, 
+		initial_authorities.len() as u8, // threshold = full set of authorities for now
 		&mut OsRng,
-	);
+	).unwrap();
 
-	initial_authorities.iter().enumerate().map(|(idx, auth)| {
+	let resharings = initial_authorities.iter().enumerate().map(|(idx, auth)| {
 		let pok = &genesis_resharing[idx].1;
 		let mut bytes = Vec::new();
 		pok.serialize_compressed(&mut bytes).unwrap();
 
 		let seed = seeds[idx];
-		// let alice_secret = w3f_bls::SecretKey::<TinyBLS377>::from_seed(format!("//{}", seed.clomne));
-		// let alice_public = alice_secret.into_public();
-
-		// let mut alice_kp = w3f_bls::Keypair {
-		// 	secret: alice_secret, 
-		// 	public: alice_public
-		// };
 		let test = get_pair_from_seed::<BeefyId>(seed);
 		let t = sp_core::bls::Pair::<TinyBLS377>::from(test);
-		let o = t.acss_recover(&bytes).expect("genesis shares should be well formatted");
+		let o = t.acss_recover(&bytes, initial_authorities.len() as u8)
+			.expect("genesis shares should be well formatted");
 		let etf_id = BeefyId::from(o.public());
 		(auth.clone(), etf_id, bytes)
-	}).collect::<Vec<_>>()
+	}).collect::<Vec<_>>();
+	(ibe_pp_bytes, resharings)
 }
 
 /// Helper function to create RuntimeGenesisConfig json patch for testing.
@@ -449,7 +450,7 @@ pub fn testnet_genesis(
 	root_key: AccountId,
 	endowed_accounts: Option<Vec<AccountId>>,
 ) -> serde_json::Value {
-	let (initial_authorities, endowed_accounts, num_endowed_accounts, stakers, genesis_shares) =
+	let (initial_authorities, endowed_accounts, num_endowed_accounts, stakers, round_key, genesis_shares) =
 		configure_accounts(initial_authorities, initial_nominators, endowed_accounts, STASH);
 
 	serde_json::json!({
@@ -505,6 +506,7 @@ pub fn testnet_genesis(
 			"authorities": Vec::<BeefyId>::new(),
 			"genesisBlock": Some(1),
 			"genesisResharing": genesis_shares,
+			"roundPubkey": round_key,
 		},
 		"society": { "pot": 0 },
 		"assets": {

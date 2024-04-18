@@ -365,13 +365,9 @@ impl Keystore for MemoryKeystore {
 		key_type: KeyTypeId,
 		public: &bls377::Public,
 		pok: &[u8],
-		msg: &[u8]
+		msg: &[u8],
+		threshold: u8
 	) -> Result<bls377::Signature, Error> {
-		// let sig = self
-		// 	.pair::<bls377::Pair>(key_type, public)
-		// 	.map(|pair| pair.sign(msg));
-		// Ok(sig)
-		// Ok(None)
 		Err(Error::Unavailable)
 	}
 

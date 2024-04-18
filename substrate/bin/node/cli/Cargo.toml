@@ -107,7 +107,7 @@ pallet-im-online = { path = "../../../frame/im-online", default-features = false
 pallet-skip-feeless-payment = { path = "../../../frame/transaction-payment/skip-feeless-payment", default-features = false }
 
 # node-specific dependencies
-kitchensink-runtime = { path = "../runtime", features = ["etf"]}
+kitchensink-runtime = { path = "../runtime" }
 node-rpc = { path = "../rpc" }
 node-primitives = { path = "../primitives" }
 
@@ -119,12 +119,13 @@ try-runtime-cli = { path = "../../../utils/frame/try-runtime/cli", optional = tr
 serde_json = { workspace = true, default-features = true }
 
 # etf dependencies
-etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "dpss-noscale" }
+etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "w3fbls-migration" }
+ark-ec = "0.4.0"
 ark-std = "0.4.0"
 ark-serialize = "0.4.0"
 ark-bls12-377 = { version = "0.4.0", features = ["curve"] }
 sp-application-crypto = { path = "../../../primitives/application-crypto" }
-w3f-bls = { path = "../../../../../bls" }
+w3f-bls = "0.1.3"
 
 [dev-dependencies]
 sc-keystore = { path = "../../../client/keystore" }

@@ -566,15 +566,11 @@ where
 		&mut self,
 		vote: VoteMessage<NumberFor<B>, AuthorityId, Signature>,
 	) -> Result<Option<BeefyVersionedFinalityProof<B>>, Error> {
-
-		info!("TONY IN HANDLE_VOTE");
-
 		let rounds = self.persisted_state.voting_oracle.active_rounds_mut()?;
 
 		let block_number = vote.commitment.block_number;
 		match rounds.add_vote(vote) {
 			VoteImportResult::RoundConcluded(signed_commitment) => {
-				info!("TONY IN HANDLE_VOTE: ROUND CONCLUDED");
 				let finality_proof = VersionedFinalityProof::V1(signed_commitment);
 				debug!(
 					target: LOG_TARGET,
@@ -587,7 +583,6 @@ where
 				return Ok(Some(finality_proof))
 			},
 			VoteImportResult::Ok => {
-				info!("TONY IN HANDLE_VOTE: VOTE IMPORT OK");
 				// Persist state after handling mandatory block vote.
 				if self
 					.voting_oracle()
@@ -745,13 +740,6 @@ where
 		};
 		let target_hash = target_header.hash();
 
-		// let payload = if let Some(hash) = self.payload_provider.payload(&target_header) {
-		// 	hash
-		// } else {
-		// 	warn!(target: LOG_TARGET, "🥩 No MMR root digest found for: {:?}", target_hash);
-		// 	return Ok(())
-		// };
-
 		let rounds = self.persisted_state.voting_oracle.active_rounds_mut()?;
 		let (validators, validator_set_id) = (rounds.validators(), rounds.validator_set_id());
 
@@ -799,22 +787,11 @@ where
 			)
 		);
 
-		// if it was valid then we instantly schedule the next round
-		// let next_round_number: NumberFor<B> = 1u64.into();
-		// self.persisted_state.voting_oracle.add_session(
-		// 	Rounds::new(
-		// 		next_round_number, 
-		// 		
-		// 	));
-
-		// self.init_session_at(rounds.validator_set().clone(), NumberFor<B>::TryFrom);
-
-		let vote = VoteMessage { commitment, id: etf_authority_id, signature };
+		let vote = VoteMessage { commitment, id: authority_id, signature };
 		if let Some(finality_proof) = self.handle_vote(vote.clone()).map_err(|err| {
 			error!(target: LOG_TARGET, "🥩 Error handling self vote: {}", err);
 			err
 		})? {
-			info!("TONY ***************** CREATED THE FINALITY PROOF WOO");
 			let encoded_proof = GossipMessage::<B>::FinalityProof(finality_proof).encode();
 			self.comms
 				.gossip_engine
@@ -824,7 +801,6 @@ where
 			debug!(target: LOG_TARGET, "🥩 Sent vote message: {:?}", vote);
 			let encoded_vote = GossipMessage::<B>::Vote(vote).encode();
 			self.comms.gossip_engine.gossip_message(votes_topic::<B>(), encoded_vote, false);
-			info!("TONY ***************** GOSSIPED VOTE WOO");
 		}
 
 		// Persist state after vote to avoid double voting in case of voter restarts.
@@ -848,7 +824,6 @@ where
 			// If the current target is a mandatory block,
 			// make sure there's also an on-demand justification request out for it.
 			if let Some((block, active)) = self.voting_oracle().mandatory_pending() {
-				// TONY TODO: could this be why I'm not getting finalized heads?
 				// This only starts new request if there isn't already an active one.
 				self.comms.on_demand_justifications.request(block, active);
 			}
@@ -862,11 +837,8 @@ where
 		hash: B::Hash,
 		id: AuthorityId,
 		message: &[u8]
-	) 
-	-> Option<Signature>
-	{
+	) -> Option<Signature> {
 		let runtime_api = self.runtime.runtime_api();
-		
 		info!(
 			target: LOG_TARGET,
 			"🎲 run ACSS recovery at best grandpa: #{:?}.",
@@ -874,7 +846,11 @@ where
 		);
 		if let Some(Some(validator_set)) = runtime_api.validator_set(hash).ok() {
 			if let Some(Some(pok_bytes)) = runtime_api.read_share(hash, id.clone()).ok() {
-				if let Ok(sig)  = self.key_store.etf_sign(&id, &pok_bytes, &message) {
+				if let Ok(sig)  = self.key_store.etf_sign(
+					&id, 
+					&pok_bytes, 
+					&message, validator_set.len() as u8
+				) {
 					return Some(sig);
 				}
 			}

@@ -306,14 +306,24 @@ where
 		}
 	
 		// recover the signature bytes from the payload
-		let raw_etf_payload = vote.commitment.payload.get_raw(
-				&sp_consensus_beefy::known_payloads::ETF_SIGNATURE
-			).expect("its ok for now");
+		let raw_etf_payload = vote.commitment.payload.get_raw(&sp_consensus_beefy::known_payloads::ETF_SIGNATURE)
+			.unwrap_or({
+				debug!(
+					target: LOG_TARGET,
+					"🎲 Corrupted (irrecoverable) signature on message: {:?}, from: {:?}", vote, sender
+				);
+				return Action::Discard(cost::BAD_SIGNATURE);
+			});
 		
 		let etf_sig: Signature = Signature::decode(
 				&mut sp_runtime::traits::TrailingZeroInput::new(&raw_etf_payload))
-				.ok()
-				.unwrap();
+				.unwrap_or({
+					debug!(
+						target: LOG_TARGET,
+						"🎲 Corrupted (irrecoverable) signature on message: {:?}, from: {:?}", vote, sender
+					);
+					return Action::Discard(cost::BAD_SIGNATURE);
+				});
 
 		if BeefyKeystore::verify(&vote.id, &vote.signature, &vote.commitment.encode())
 			// && BeefyKeystore::verify(&vote.id, &etf_sig, &round.to_string().as_bytes()) 
@@ -324,10 +334,6 @@ where
 				);
 			Action::Keep(self.votes_topic, benefit::VOTE_MESSAGE)
 		} else {
-			info!(
-				target: LOG_TARGET,
-				"🎲 The etf signature WAS NOT verified! AH FUCK!~!!!!!!!!!!!!!!!!!!",
-			);
 			debug!(
 				target: LOG_TARGET,
 				"🥩 Bad signature on message: {:?}, from: {:?}", vote, sender

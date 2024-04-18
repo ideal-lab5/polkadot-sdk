@@ -65,6 +65,35 @@ fn genesis_session_initializes_authorities() {
 }
 
 #[test]
+fn genesis_session_initializes_resharing_and_commitments_with_valid_values() {
+	let genesis_resharing = mock_resharing(
+		vec![
+			(1, 2, vec![1, 2]), 
+			(2, 3, vec![2, 3])
+		]);
+	let want_resharing = genesis_resharing.clone();
+
+	let genesis_roundkey = [1;96].to_vec();
+
+	ExtBuilder::default()
+		.add_resharing(genesis_resharing)
+		.add_round_key(genesis_roundkey)
+		.build_and_execute(|| 
+	{
+		// resharings are populated
+		let resharings = beefy::Shares::<Test>::get();
+		assert_eq!(resharings.len(), 2);
+		assert_eq!(resharings[0], want_resharing[0].2);
+		assert_eq!(resharings[1], want_resharing[1].2);
+
+		let commitments = beefy::Commitments::<Test>::get();
+		assert_eq!(commitments.len(), 2);
+		assert_eq!(commitments[0], want_resharing[0].1);
+		assert_eq!(commitments[1], want_resharing[1].1);
+	});
+}
+
+#[test]
 fn session_change_updates_authorities() {
 	let authorities = mock_authorities(vec![1, 2, 3, 4]);
 	let want_validators = authorities.clone();

@@ -426,10 +426,11 @@ impl Keystore for LocalKeystore {
 			public: &bls377::Public,
 			pok_bytes: &[u8],
 			message: &[u8],
+			threshold: u8,
 		) -> std::result::Result<bls377::Signature, TraitError>  {
 			if let Some(Some(etf_pair)) = self.0.read()
 				.key_pair_by_type::<bls377::Pair>(public, key_type)?
-				.map(|pair| pair.acss_recover(pok_bytes.clone())) {
+				.map(|pair| pair.acss_recover(pok_bytes.clone(), threshold)) {
 				// "IBE.Extract" Q = s*H(message) + DLEQ Proof
 				let extract = etf_pair.sign(&message);
 				// let pk = etf_pair.public();

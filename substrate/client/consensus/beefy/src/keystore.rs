@@ -35,11 +35,6 @@ use codec::Decode;
 use log::{info, warn};
 use std::marker::PhantomData;
 
-use etf_crypto_primitives::{
-	proofs::hashed_el_gamal_sigma::BatchPoK,
-	dpss::acss::HighThresholdACSS
-};
-
 use crate::{error, LOG_TARGET};
 
 /// A BEEFY specific keystore implemented as a `Newtype`. This is basically a
@@ -217,6 +212,7 @@ impl<AuthorityId: AuthorityIdBound> BeefyKeystore<AuthorityId> {
 		public: &AuthorityId,
 		pok_bytes: &[u8],
 		message: &[u8],
+		threshold: u8,
 	) -> Result<<AuthorityId as RuntimeAppPublic>::Signature, error::Error> {
 		let store = self.0.clone().ok_or_else(|| error::Error::Keystore("no Keystore".into()))
 			.map_err(|_| ())
@@ -230,6 +226,7 @@ impl<AuthorityId: AuthorityIdBound> BeefyKeystore<AuthorityId> {
 			&public, 
 			pok_bytes,
 			message,
+			threshold,
 		).map_err(|_| {
 			error::Error::Signature(format!(
 				"Failed to recover a key from the provided proof of knowledge"
@@ -237,14 +234,9 @@ impl<AuthorityId: AuthorityIdBound> BeefyKeystore<AuthorityId> {
 		})?;
 
 		let mut signature_byte_array: &[u8] = sig.as_ref();
-		// should this be runtimeapppublic instead?
 		let signature = <AuthorityId as RuntimeAppPublic>::Signature::decode(
 			&mut signature_byte_array,
-		)
-		// let signature = bls377::Signature::decode(
-		// 	&mut signature_byte_array,
-		// )
-		.map_err(|_| {
+		).map_err(|_| {
 			error::Error::Signature(format!(
 				"invalid signature {:?} for key {:?}",
 				signature_byte_array, public
@@ -485,7 +477,7 @@ pub mod tests {
 
 		let store: BeefyKeystore<AuthorityId> = Some(store).into();
 
-		let msg = b"are you involved or commited?";
+		let msg = b"are you involved or committed?";
 
 		let sig1 = store.sign(&alice, msg).unwrap();
 		let sig2 = Keyring::<AuthorityId>::Alice.sign(msg);
@@ -521,7 +513,7 @@ pub mod tests {
 
 		let alice = Keyring::Alice.public();
 
-		let msg = b"are you involved or commited?";
+		let msg = b"are you involved or committed?";
 		let sig = store.sign(&alice, msg).err().unwrap();
 		let err = Error::Signature(expected_error_message.to_string());
 
@@ -544,7 +536,7 @@ pub mod tests {
 		let store: BeefyKeystore<ecdsa_crypto::Public> = None.into();
 
 		let alice = Keyring::Alice.public();
-		let msg = b"are you involved or commited";
+		let msg = b"are you involved or committed";
 
 		let sig = store.sign(&alice, msg).err().unwrap();
 		let err = Error::Keystore("no Keystore".to_string());
@@ -568,7 +560,7 @@ pub mod tests {
 		let alice = Keyring::Alice.public();
 
 		// `msg` and `sig` match
-		let msg = b"are you involved or commited?";
+		let msg = b"are you involved or committed?";
 		let sig = store.sign(&alice, msg).unwrap();
 		assert!(BeefyKeystore::verify(&alice, &sig, msg));
 

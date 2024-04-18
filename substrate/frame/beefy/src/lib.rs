@@ -62,6 +62,7 @@ use crate::equivocation::{EquivocationEvidenceFor};
 
 const LOG_TARGET: &str = "runtime::beefy";
 
+
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
@@ -137,8 +138,6 @@ pub mod pallet {
 		StorageValue<_, BoundedVec<T::BeefyId, T::MaxAuthorities>, ValueQuery>;
 
 	/// publicly verifiable shares for the current round (a resharing)
-	/// here we assume that they follow the  same order as the Authorities storage value vec
-	/// later on we need to modify this to use merkle roots so we can change the ETF authority set
 	#[pallet::storage]
 	pub type Shares<T: Config> = 
 		StorageValue<_, BoundedVec<BoundedVec<u8, ConstU32<1024>>, T::MaxAuthorities>, ValueQuery>;
@@ -148,6 +147,11 @@ pub mod pallet {
 	#[pallet::storage]
 	pub type Commitments<T: Config> = 
 		StorageValue<_, BoundedVec<T::BeefyId, T::MaxAuthorities>, ValueQuery>;
+
+	/// the public key for the round (or rounds)
+	#[pallet::storage]
+	pub type RoundPublic<T: Config> = 
+		StorageValue<_, BoundedVec<u8, ConstU32<96>>, ValueQuery>;
 
 	/// A mapping from BEEFY set ID to the index of the *most recent* session for which its
 	/// members were responsible.
@@ -179,7 +183,9 @@ pub mod pallet {
 		/// to guarantee the client gets a finality notification for exactly this block.
 		pub genesis_block: Option<BlockNumberFor<T>>,
 		/// (beefy id, commitment, BatchPoK (which technically contains the commitment...))
-		pub genesis_resharing: Vec<(T::BeefyId, T::BeefyId, Vec<u8>)>
+		pub genesis_resharing: Vec<(T::BeefyId, T::BeefyId, Vec<u8>)>,
+		/// the round pubkey is the IBE master secret multiplied by a given group generator (e.g r = sP)
+		pub round_pubkey: Vec<u8>,
 	}
 
 	impl<T: Config> Default for GenesisConfig<T> {
@@ -187,10 +193,12 @@ pub mod pallet {
 			// BEEFY genesis will be first BEEFY-MANDATORY block,
 			// use block number one instead of chain-genesis.
 			let genesis_block = Some(One::one());
+			// by default, etf consensus will fail, must be intentionally seeded
 			Self { 
 				authorities: Vec::new(), 
 				genesis_block, 
 				genesis_resharing: Vec::new(),
+				round_pubkey: Vec::new(),
 			}
 		}
 	}
@@ -202,8 +210,10 @@ pub mod pallet {
 				// we panic here as runtime maintainers can simply reconfigure genesis and restart
 				// the chain easily
 				.expect("Authorities vec too big");
-			Pallet::<T>::initialize_genesis_shares(&self.genesis_resharing)
-				.expect("The genesis resharing should be correctly derived");
+			Pallet::<T>::initialize_genesis_shares(
+				&self.genesis_resharing,
+				self.round_pubkey.clone(),
+			).expect("The genesis resharing should be correctly derived");
 			GenesisBlock::<T>::put(&self.genesis_block);
 		}
 	}
@@ -323,15 +333,6 @@ use frame_system::offchain::SubmitTransaction;
 
 impl<T: Config> Pallet<T> {
 
-	// /// try to read shares at a given index
-	// pub fn read_share(at: u8) -> Option<Vec<u8>> {
-	// 	// let shares = Shares::<T>::get();
-	// 	// if at as usize >= shares.len() {
-	// 	// 	return None;
-	// 	// }
-	// 	// Some(shares[at as usize].clone().into_inner())
-	// }
-
 	/// Return the current active BEEFY validator set.
 	pub fn validator_set() -> Option<ValidatorSet<T::BeefyId>> {
 		let validators: BoundedVec<T::BeefyId, T::MaxAuthorities> = Authorities::<T>::get();
@@ -421,15 +422,18 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn initialize_genesis_shares(
-		genesis_resharing: &Vec<(T::BeefyId, T::BeefyId, Vec<u8>)>
+		genesis_resharing: &Vec<(T::BeefyId, T::BeefyId, Vec<u8>)>,
+		round_key: Vec<u8>,
 	) -> Result<(), ()>  {
-		// TODO: we need to convert back to BatchPoks and get the pubkey commitments
-		// then we need to aggregate them and encode it onchain
+		// TODO: define 96 as a const
+		let bounded_rk =
+			BoundedVec::<u8, ConstU32<96>>::try_from(round_key)
+				.expect("The round key should be 96 bytes.");
+		<RoundPublic<T>>::put(bounded_rk);
 
-		// let mut round_pubkey = ark_bls12_377::G1Projective::zero();
 		let mut unbounded_shares: Vec<BoundedVec<u8, ConstU32<1024>>> = Vec::new();
 		let mut unbounded_commitments: Vec<T::BeefyId> = Vec::new();
-		// let mut shares:  = Vec::new();
+		
 		genesis_resharing.iter().for_each(|(public, commitment, pok_bytes)| {
 
 			let bounded_pok =
@@ -437,22 +441,12 @@ impl<T: Config> Pallet<T> {
 					.expect("genesis poks should be well formatted");
 			
 			unbounded_shares.push(bounded_pok);
-
-			// let bounded_commitment =
-			// 	BoundedVec::<u8, ConstU32<1024>>::try_from(commitment_bytes.clone())
-			// 		.expect("genesis commitments should be well formatted");
-
-			// unbounded_commitments.push(commitment.clone());
-
-			// let pok: BatchPoK<ark_bls12_377::G1Projective> = 
-			// 	BatchPoK::deserialize_compressed(&pok_bytes[..])
-			// 		.expect("Genesis shares should be well formatted.");
-			// we could also check the proofs here, but we can trust them on genesis for nows
 		});
 		
 		let bounded_shares =
-			BoundedVec::<BoundedVec<u8, ConstU32<1024>>, T::MaxAuthorities>::try_from(unbounded_shares)
-				.expect("There should be the correct number of genesis resharings");
+			BoundedVec::<BoundedVec<u8, ConstU32<1024>>, T::MaxAuthorities>::try_from(
+				unbounded_shares
+			).expect("There should be the correct number of genesis resharings");
 		<Shares<T>>::put(bounded_shares);
 
 		let bounded_commitments =
