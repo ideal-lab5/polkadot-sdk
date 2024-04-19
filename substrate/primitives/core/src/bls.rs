@@ -36,7 +36,7 @@ use w3f_bls::{
 };
 
 use etf_crypto_primitives::{
-	dpss::acss::SKWrapper,
+	dpss::acss::Keypair as ETFKeypair,
 	proofs::hashed_el_gamal_sigma::BatchPoK
 };
 
@@ -153,7 +153,7 @@ impl<T: EngineBLS> Pair<T> {
 		let mut mutable_self = self.clone();
 		if let Ok(pok) = BatchPoK::<T::PublicKeyGroup>::
 			deserialize_compressed(&pok_bytes[..]) {
-			let sk = SKWrapper(mutable_self.0.into_vartime());
+			let sk = ETFKeypair(mutable_self.0.into_vartime());
 			if let Ok(recovered) = sk.recover(pok, threshold) {
 				let secret = w3f_bls::SecretKeyVT(recovered.0).into_split_dirty();
 				let public = secret.into_public();

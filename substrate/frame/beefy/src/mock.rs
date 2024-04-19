@@ -36,7 +36,10 @@ use sp_state_machine::BasicExternalities;
 
 use crate as pallet_beefy;
 
-pub use sp_consensus_beefy::{bls_crypto::AuthorityId as BeefyId, ConsensusLog, BEEFY_ENGINE_ID};
+pub use sp_consensus_beefy::{
+	bls_crypto::AuthorityId as BeefyId, 
+	ConsensusLog, BEEFY_ENGINE_ID
+};
 
 impl_opaque_keys! {
 	pub struct MockSessionKeys {

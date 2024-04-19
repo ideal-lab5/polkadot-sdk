@@ -16,7 +16,6 @@
 // limitations under the License.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-
 use codec::{Encode, MaxEncodedLen};
 
 use frame_support::{
@@ -44,9 +43,6 @@ use sp_consensus_beefy::{
 	AuthorityIndex, BeefyAuthorityId, ConsensusLog, EquivocationProof, OnNewValidatorSet,
 	ValidatorSet, BEEFY_ENGINE_ID, GENESIS_AUTHORITY_SET_ID,
 };
-
-use ark_std::Zero;
-use ark_serialize::CanonicalDeserialize;
 
 mod default_weights;
 mod equivocation;
@@ -328,9 +324,6 @@ pub mod pallet {
 	}
 }
 
-use log::{error};
-use frame_system::offchain::SubmitTransaction;
-
 impl<T: Config> Pallet<T> {
 
 	/// Return the current active BEEFY validator set.
@@ -432,14 +425,11 @@ impl<T: Config> Pallet<T> {
 		<RoundPublic<T>>::put(bounded_rk);
 
 		let mut unbounded_shares: Vec<BoundedVec<u8, ConstU32<1024>>> = Vec::new();
-		let mut unbounded_commitments: Vec<T::BeefyId> = Vec::new();
 		
-		genesis_resharing.iter().for_each(|(public, commitment, pok_bytes)| {
-
+		genesis_resharing.iter().for_each(|(_public, _commitment, pok_bytes)| {
 			let bounded_pok =
 				BoundedVec::<u8, ConstU32<1024>>::try_from(pok_bytes.clone())
 					.expect("genesis poks should be well formatted");
-			
 			unbounded_shares.push(bounded_pok);
 		});
 		

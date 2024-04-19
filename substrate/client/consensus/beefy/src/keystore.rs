@@ -26,7 +26,7 @@ use sp_consensus_beefy::{AuthorityIdBound, BeefyAuthorityId, BeefySignatureHashe
 use sp_core::ecdsa;
 #[cfg(feature = "bls-experimental")]
 use sp_core::bls377;
-#[cfg(all(feature = "bls-experimental", feature = "full_crypto"))]
+#[cfg(feature = "bls-experimental")]
 use sp_core::ecdsa_bls377;
 use sp_crypto_hashing::keccak_256;
 use sp_keystore::KeystorePtr;

@@ -20,7 +20,6 @@
 use parking_lot::RwLock;
 use sp_application_crypto::{AppCrypto, AppPair, IsWrappedBy};
 use sp_core::{
-	Decode,
 	crypto::{ByteArray, ExposeSecret, KeyTypeId, Pair as CorePair, SecretString, VrfSecret},
 	ecdsa, ed25519, sr25519,
 };
@@ -430,7 +429,7 @@ impl Keystore for LocalKeystore {
 		) -> std::result::Result<bls377::Signature, TraitError>  {
 			if let Some(Some(etf_pair)) = self.0.read()
 				.key_pair_by_type::<bls377::Pair>(public, key_type)?
-				.map(|pair| pair.acss_recover(pok_bytes.clone(), threshold)) {
+				.map(|pair| pair.acss_recover(pok_bytes, threshold)) {
 				// "IBE.Extract" Q = s*H(message) + DLEQ Proof
 				let extract = etf_pair.sign(&message);
 				// let pk = etf_pair.public();
