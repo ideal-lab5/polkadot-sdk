@@ -315,7 +315,6 @@ where
 			comms,
 			links,
 			pending_justifications,
-			etf_session_pubkey: None,
 		}
 	}
 
@@ -345,7 +344,6 @@ where
 		let mut sessions = VecDeque::new();
 		let mut header = best_grandpa.clone();
 		let state = loop {
-
 			if let Some(true) = blockchain
 				.justifications(header.hash())
 				.ok()
@@ -400,7 +398,6 @@ where
 				)
 				.ok_or_else(|| Error::Backend("Invalid BEEFY chain".into()))?
 			}
-
 
 			if let Some(active) = find_authorities_change::<B>(&header) {
 				debug!(

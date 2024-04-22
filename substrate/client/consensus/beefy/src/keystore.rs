@@ -25,9 +25,7 @@ use sp_application_crypto::{
 use sp_consensus_beefy::{AuthorityIdBound, BeefyAuthorityId, BeefySignatureHasher};
 use sp_core::ecdsa;
 #[cfg(feature = "bls-experimental")]
-use sp_core::bls377;
-#[cfg(feature = "bls-experimental")]
-use sp_core::ecdsa_bls377;
+use sp_core::{bls377, ecdsa_bls377};
 use sp_crypto_hashing::keccak_256;
 use sp_keystore::KeystorePtr;
 
@@ -113,12 +111,12 @@ impl<AuthorityId: AuthorityIdBound> BeefyKeystore<AuthorityId> {
 				let sig = store
 					.bls377_sign(BEEFY_KEY_TYPE, &public, &message)
 					.map_err(|e| error::Error::Keystore(e.to_string()))?
-					.ok_or_else(|| error::Error::Signature("bls377_sign()  failed".to_string()))?;
+					.ok_or_else(|| error::Error::Signature("bls377_sign() failed".to_string()))?;
 				let sig_ref: &[u8] = sig.as_ref();
 				sig_ref.to_vec()
 			},
 
-			#[cfg(all(feature = "bls-experimental", feature = "full_crypto"))]
+			#[cfg(all(feature = "bls-experimental"))]
 			ecdsa_bls377::CRYPTO_ID => {
 				let public: ecdsa_bls377::Public =
 					ecdsa_bls377::Public::try_from(public.as_slice()).unwrap();

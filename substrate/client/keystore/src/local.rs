@@ -432,7 +432,6 @@ impl Keystore for LocalKeystore {
 				.map(|pair| pair.acss_recover(pok_bytes, threshold)) {
 				// "IBE.Extract" Q = s*H(message) + DLEQ Proof
 				let extract = etf_pair.sign(&message);
-				// let pk = etf_pair.public();
 				return Ok(extract);
 			}
 

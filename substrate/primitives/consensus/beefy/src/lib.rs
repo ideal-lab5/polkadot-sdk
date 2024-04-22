@@ -208,10 +208,10 @@ pub mod ecdsa_bls_crypto {
 
 			// TODO: I'm not actually using this currently, just doing this so it will compile..
 			false
-			// EcdsaBlsPair::verify::<H>(
-			// 	signature.as_inner_ref(),
-			// 	msg,
-			// )
+			// this is the original code but I can't get it to compile for some reason...
+			// something about a missing panic handler appears when I try to enable the full_crypto feature
+			// for sp-core and sp-application-crypto
+			// not sure what I broke exactly to cause this, but we 
 			// EcdsaBlsPair::verify_with_hasher::<H>(
 			// 	signature.as_inner_ref(),
 			// 	msg,

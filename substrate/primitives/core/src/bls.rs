@@ -36,7 +36,7 @@ use w3f_bls::{
 };
 
 use etf_crypto_primitives::{
-	dpss::acss::Keypair as ETFKeypair,
+	dpss::Keypair as ETFKeypair,
 	proofs::hashed_el_gamal_sigma::BatchPoK
 };
 
@@ -149,8 +149,10 @@ fn derive_hard_junction<T: HardJunctionId>(secret_seed: &Seed, cc: &[u8; 32]) ->
 }
 
 impl<T: EngineBLS> Pair<T> {
+	/// the ACSS Recover algorithm
+	/// attempt to recover a keypair from the proof of knowledge
 	pub fn acss_recover(&self, pok_bytes: &[u8], threshold: u8) -> Option<Self> {
-		let mut mutable_self = self.clone();
+		let mutable_self = self.clone();
 		if let Ok(pok) = BatchPoK::<T::PublicKeyGroup>::
 			deserialize_compressed(&pok_bytes[..]) {
 			let sk = ETFKeypair(mutable_self.0.into_vartime());

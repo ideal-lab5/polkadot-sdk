@@ -3025,7 +3025,6 @@ impl_runtime_apis! {
 		}
 
 		fn read_commitment(who: BeefyId) -> Option<BeefyId> {
-
 			let authorities = pallet_beefy::Authorities::<Runtime>::get();
 			if let Some(at) = authorities.iter().position(|auth| auth.eq(&who)) {
 				let commitments = pallet_beefy::Commitments::<Runtime>::get();
@@ -3035,13 +3034,6 @@ impl_runtime_apis! {
 				return Some(commitments[at as usize].clone());
 			}
 			None
-
-
-			// let commitments = pallet_beefy::Commitments::<Runtime>::get();
-			// if at as usize >= commitments.len() {
-			// 	return None;
-			// }
-			// Some(commitments[at as usize].clone().into_inner())
 		}
 	}
 

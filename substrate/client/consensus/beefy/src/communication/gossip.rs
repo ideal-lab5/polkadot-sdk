@@ -325,9 +325,7 @@ where
 					return Action::Discard(cost::BAD_SIGNATURE);
 				});
 
-		if BeefyKeystore::verify(&vote.id, &vote.signature, &vote.commitment.encode())
-			// && BeefyKeystore::verify(&vote.id, &etf_sig, &round.to_string().as_bytes()) 
-			{
+		if BeefyKeystore::verify(&vote.id, &vote.signature, &vote.commitment.encode()) {
 				info!(
 					target: LOG_TARGET,
 					"🎲 The etf signature was verified!",

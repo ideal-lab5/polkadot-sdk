@@ -54,10 +54,9 @@ mod tests;
 pub use crate::equivocation::{EquivocationOffence, EquivocationReportSystem, TimeSlot};
 pub use pallet::*;
 
-use crate::equivocation::{EquivocationEvidenceFor};
+use crate::equivocation::EquivocationEvidenceFor;
 
 const LOG_TARGET: &str = "runtime::beefy";
-
 
 #[frame_support::pallet]
 pub mod pallet {

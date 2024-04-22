@@ -83,7 +83,7 @@ pub(crate) enum RoundAction {
 pub(crate) struct VoterOracle<B: Block> {
 	/// Queue of known sessions. Keeps track of voting rounds (block numbers) within each session.
 	///
-	/// There are three voter states coresponding to three queue states:
+	/// There are three voter states corresponding to three queue states:
 	/// 1. voter uninitialized: queue empty,
 	/// 2. up-to-date - all mandatory blocks leading up to current GRANDPA finalized: queue has ONE
 	///    element, the 'current session' where `mandatory_done == true`,
@@ -400,9 +400,6 @@ pub(crate) struct BeefyWorker<B: Block, BE, P, RuntimeApi, S> {
 	pub persisted_state: PersistedState<B>,
 	/// BEEFY voter metrics
 	pub metrics: Option<VoterMetrics>,
-
-	/// the ETFN session public key for this node
-	pub etf_session_pubkey: Option<bls377::Public>, // TODO: remove
 }
 
 impl<B, BE, P, R, S> BeefyWorker<B, BE, P, R, S>
@@ -770,11 +767,12 @@ where
 			},
 		};
 		
+		// it is a critical failure
+		// if there is no commitment available in the runtime
 		let etf_authority_id = self.runtime.runtime_api()
 			.read_commitment(target_hash, authority_id.clone())
-			.ok()
-			.unwrap()
-			.expect("todo");
+			.map_err(|_| Error::ConsensusReset)?
+			.unwrap();
 
 		info!(
 			target: LOG_TARGET,

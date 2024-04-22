@@ -323,6 +323,17 @@ sp_api::mock_impl_runtime_apis! {
 			_dummy1: ValidatorSetId,
 			_dummy2: AuthorityId,
 		) -> Option<OpaqueKeyOwnershipProof> { Some(OpaqueKeyOwnershipProof::new(vec![])) }
+
+		fn read_share(dummy: AuthorityId) -> Option<Vec<u8>> {
+			// TODO
+			Some(vec![])
+		}
+
+		fn read_commitment(dummy: AuthorityId) -> Option<AuthorityId> {
+			// TODO
+			None
+		}
+
 	}
 
 	impl MmrApi<Block, MmrRootHash, NumberFor<Block>> for RuntimeApi {

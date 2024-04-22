@@ -76,7 +76,6 @@ where
 pub struct BeefyEcdsaToEthereum;
 impl Convert<sp_consensus_beefy::ecdsa_crypto::AuthorityId, Vec<u8>> for BeefyEcdsaToEthereum {
 	fn convert(beefy_id: sp_consensus_beefy::ecdsa_crypto::AuthorityId) -> Vec<u8> {
-		// Vec::new()
 		sp_core::ecdsa::Public::from(beefy_id)
 			.to_eth_address()
 			.map(|v| v.to_vec())
@@ -87,7 +86,8 @@ impl Convert<sp_consensus_beefy::ecdsa_crypto::AuthorityId, Vec<u8>> for BeefyEc
 	}
 }
 
-/// Convert BEEFY secp256k1 public keys into Ethereum addresses
+/// Convert BEEFY public keys into Ethereum addresses
+/// not really functional at the moment
 pub struct BeefyBlsToEthereum;
 impl Convert<sp_consensus_beefy::bls_crypto::AuthorityId, Vec<u8>> for BeefyBlsToEthereum {
 	fn convert(_beefy_id: sp_consensus_beefy::bls_crypto::AuthorityId) -> Vec<u8> {
