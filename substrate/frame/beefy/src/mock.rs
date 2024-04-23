@@ -36,8 +36,13 @@ use sp_state_machine::BasicExternalities;
 
 use crate as pallet_beefy;
 
+#[cfg(feature = "bls-experimental")]
+pub use sp_consensus_beefy::bls_crypto::AuthorityId as BeefyId;
+
+#[cfg(not(feature = "bls-experimental"))]
+pub use sp_consensus_beefy::ecdsa_crypto::AuthorityId as BeefyId;
+
 pub use sp_consensus_beefy::{
-	bls_crypto::AuthorityId as BeefyId, 
 	ConsensusLog, BEEFY_ENGINE_ID
 };
 
@@ -215,7 +220,7 @@ impl pallet_offences::Config for Test {
 #[derive(Default)]
 pub struct ExtBuilder {
 	authorities: Vec<BeefyId>,
-	genesis_resharing: Vec<(T::BeefyId, T::BeefyId, Vec<u8>)>,
+	genesis_resharing: Vec<(BeefyId, BeefyId, Vec<u8>)>,
 	round_pubkey: Vec<u8>,
 }
 
@@ -228,7 +233,7 @@ impl ExtBuilder {
 	}
 
 	#[cfg(test)]
-	pub(crate) fn add_resharing(mut self, genesis_resharing: Vec<(T::BeefyId, T::BeefyId, Vec<u8>)>) -> Self {
+	pub(crate) fn add_resharing(mut self, genesis_resharing: Vec<(BeefyId, BeefyId, Vec<u8>)>) -> Self {
 		self.genesis_resharing = genesis_resharing;
 		self
 	}
@@ -282,6 +287,15 @@ impl ExtBuilder {
 
 		staking_config.assimilate_storage(&mut t).unwrap();
 
+		let beefy_config = pallet_beefy::GenesisConfig::<Test> {
+			authorities: vec![],
+			genesis_block: None,
+			genesis_resharing: self.genesis_resharing,
+			round_pubkey: self.round_pubkey,
+		};
+
+		beefy_config.assimilate_storage(&mut t).unwrap();
+
 		t.into()
 	}
 
@@ -309,9 +323,14 @@ pub fn mock_authorities(vec: Vec<u8>) -> Vec<BeefyId> {
 	vec.into_iter().map(|id| mock_beefy_id(id)).collect()
 }
 
-
-pub fn mock_resharing(vec: Vec<(u8, u8, Vec<u8>)>) -> Vec<BeefyId> {
-	vec.into_iter().map(|id| (mock_beefy_id(id.0), mock_beefy_id(id.1), id.2)).collect()
+pub fn mock_resharing(vec: Vec<(u8, u8, Vec<u8>)>) -> Vec<(BeefyId, BeefyId, Vec<u8> )> {
+	vec.into_iter().map(|id| 
+		(
+			mock_beefy_id(id.0), 
+			mock_beefy_id(id.1), 
+			id.2
+		)
+	).collect()
 }
 
 pub fn start_session(session_index: SessionIndex) {

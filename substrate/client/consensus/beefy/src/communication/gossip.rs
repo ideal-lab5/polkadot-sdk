@@ -304,26 +304,6 @@ where
 				return Action::Discard(cost::UNKNOWN_VOTER)
 			}
 		}
-	
-		// recover the signature bytes from the payload
-		let raw_etf_payload = vote.commitment.payload.get_raw(&sp_consensus_beefy::known_payloads::ETF_SIGNATURE)
-			.unwrap_or({
-				debug!(
-					target: LOG_TARGET,
-					"🎲 Corrupted (irrecoverable) signature on message: {:?}, from: {:?}", vote, sender
-				);
-				return Action::Discard(cost::BAD_SIGNATURE);
-			});
-		
-		let etf_sig: Signature = Signature::decode(
-				&mut sp_runtime::traits::TrailingZeroInput::new(&raw_etf_payload))
-				.unwrap_or({
-					debug!(
-						target: LOG_TARGET,
-						"🎲 Corrupted (irrecoverable) signature on message: {:?}, from: {:?}", vote, sender
-					);
-					return Action::Discard(cost::BAD_SIGNATURE);
-				});
 
 		if BeefyKeystore::verify(&vote.id, &vote.signature, &vote.commitment.encode()) {
 				info!(

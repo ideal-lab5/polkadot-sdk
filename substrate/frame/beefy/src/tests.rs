@@ -68,13 +68,14 @@ fn genesis_session_initializes_resharing_and_commitments_with_valid_values() {
 	let genesis_resharing = mock_resharing(
 		vec![
 			(1, 2, vec![1, 2]), 
-			(2, 3, vec![2, 3])
+			(3, 4, vec![3, 4])
 		]);
-	let want_resharing = genesis_resharing.clone();
 
+	let want_resharing = genesis_resharing.clone();
 	let genesis_roundkey = [1;96].to_vec();
 
 	ExtBuilder::default()
+		.add_authorities(mock_authorities(vec![1, 3]))
 		.add_resharing(genesis_resharing)
 		.add_round_key(genesis_roundkey)
 		.build_and_execute(|| 

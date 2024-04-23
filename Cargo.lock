@@ -18895,12 +18895,17 @@ dependencies = [
 name = "sp-keystore"
 version = "0.34.0"
 dependencies = [
+ "ark-ec",
+ "ark-serialize 0.4.2",
+ "ark-std 0.4.0",
+ "etf-crypto-primitives",
  "parity-scale-codec",
  "parking_lot 0.12.1",
  "rand",
  "rand_chacha 0.2.2",
  "sp-core",
  "sp-externalities 0.25.0",
+ "w3f-bls",
 ]
 
 [[package]]

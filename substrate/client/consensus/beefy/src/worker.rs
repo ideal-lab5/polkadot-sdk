@@ -36,7 +36,6 @@ use futures::{stream::Fuse, FutureExt, StreamExt};
 use log::{debug, error, info, log_enabled, trace, warn};
 use sc_client_api::{Backend, FinalityNotification, FinalityNotifications, HeaderBackend};
 use sc_utils::notification::NotificationReceiver;
-use sp_application_crypto::UncheckedFrom;
 use sp_api::ProvideRuntimeApi;
 use sp_arithmetic::traits::{AtLeast32Bit, Saturating};
 use sp_consensus::SyncOracle;
@@ -58,11 +57,11 @@ use std::{
 	sync::Arc,
 };
 
-use w3f_bls::{
-    single_pop_aggregator::SignatureAggregatorAssumingPoP, DoublePublicKeyScheme, EngineBLS, Keypair, Message, PublicKey, PublicKeyInSignatureGroup, Signed, TinyBLS, TinyBLS377,
-};
+// use w3f_bls::{
+//     single_pop_aggregator::SignatureAggregatorAssumingPoP, DoublePublicKeyScheme, EngineBLS, Keypair, Message, PublicKey, PublicKeyInSignatureGroup, Signed, TinyBLS, TinyBLS377,
+// };
 
-use ark_serialize::CanonicalDeserialize;
+// use ark_serialize::CanonicalDeserialize;
 /// Bound for the number of pending justifications - use 2400 - the max number
 /// of justifications possible in a single session.
 const MAX_BUFFERED_JUSTIFICATIONS: usize = 2400;
@@ -250,12 +249,19 @@ impl<B: Block> VoterOracle<B> {
 	/// Return `Some(number)` if we should be voting on block `number`,
 	/// return `None` if there is no block we should vote on.
 	pub fn voting_target(&self) -> Option<NumberFor<B>> {
-		let rounds = self.sessions.front().or_else(|| {
-			info!(target: LOG_TARGET, "🥩 No voting round started");
-			None
-		})?;
+		// let rounds = self.sessions.front().or_else(|| {
+		// 	info!(target: LOG_TARGET, "🥩 No voting round started");
+		// 	None
+		// })?;
+
+		// for now, I am leaving the code as is (commented)
+		// the change here enforces that validators sign an ETF vote
+		// on top of EVERY finalized block, without any specific incentive
+		// we have a forthcoming feature to change this, so will leave
+		// the code as is for posterity + future work
 		let best_grandpa = *self.best_grandpa_block_header.number();
-		let best_beefy = self.best_beefy_block;
+		Some(best_grandpa)
+		// let best_beefy = self.best_beefy_block;
 
 		// // `target` is guaranteed > `best_beefy` since `min_block_delta` is at least `1`.
 		// let target =
@@ -269,8 +275,6 @@ impl<B: Block> VoterOracle<B> {
 		// );
 		// target
 		
-		// lets see...
-		Some(best_grandpa)
 	}
 }
 
@@ -785,7 +789,7 @@ where
 			)
 		);
 
-		let vote = VoteMessage { commitment, id: authority_id, signature };
+		let vote = VoteMessage { commitment, id: etf_authority_id, signature };
 		if let Some(finality_proof) = self.handle_vote(vote.clone()).map_err(|err| {
 			error!(target: LOG_TARGET, "🥩 Error handling self vote: {}", err);
 			err

@@ -368,12 +368,15 @@ impl Keystore for MemoryKeystore {
 		msg: &[u8],
 		threshold: u8
 	) -> Result<bls377::Signature, Error> {
-		// let sig = self.pair::<bls377::Pair>(key_type, public)
-		// 	.map(|pair| pair.acss_recover(pok, threshold))
-		// 	.ok_or(return Err(Error::Unavailable))?;
-		// Ok(sig.unwrap())
+		let sig = self.pair::<bls377::Pair>(key_type, public)
+			.map(|pair| pair.acss_recover(pok, threshold))
+			.ok_or(return Err(Error::Unavailable))?
+			.unwrap();
+		let extract = sig.sign(&msg);
+		// return Ok(extract);
+		Ok(extract)
 		// TODO
-		return Err(Error::Unavailable);
+		// return Err(Error::Unavailable);
 	}
 
 	fn insert(&self, key_type: KeyTypeId, suri: &str, public: &[u8]) -> Result<(), ()> {
@@ -415,6 +418,12 @@ mod tests {
 		sr25519,
 		testing::{ECDSA, ED25519, SR25519},
 	};
+	// only needed for ETF resharing construction
+	use ark_serialize::CanonicalSerialize;
+	use ark_std::UniformRand;
+	use ark_ec::Group;
+	use rand::rngs::OsRng;
+	use w3f_bls::{EngineBLS, TinyBLS377, SerializableToBytes};
 
 	#[test]
 	fn store_key_and_extract() {
@@ -570,29 +579,37 @@ mod tests {
 		// insert key, sign again
 		store.insert(BLS377, suri, pair.public().as_ref()).unwrap();
 
+		let msk = <TinyBLS377 as EngineBLS>::Scalar::rand(&mut OsRng);
+		let msk_prime = <TinyBLS377 as EngineBLS>::Scalar::rand(&mut OsRng);
 		// build a resharing 
-		// Aggregate BLS signature scheme with Signature in G1 for BLS12-377 curve.
-		let (ibe_pp_bytes, genesis_shares) = etf_genesis::<TinyBLS377>(
-			// initial_authorities.iter().map(|x| x.7.clone()).collect::<Vec<_>>(),
-			vec![BeefyId::from(pair.public())],
-			vec!["//Alice"],
+		let double_secret = etf_crypto_primitives::dpss::DoubleSecret::<TinyBLS377>(
+			msk, msk_prime
 		);
 
-		let res = store
-			.acss_recover(BLS377, &pair.public(), &msg[..])
-			.unwrap();
+		let ibe_pub_param = <TinyBLS377 as EngineBLS>::PublicKeyGroup::generator() * msk;
+		let mut ibe_pp_bytes = Vec::new();
+		ibe_pub_param.serialize_compressed(&mut ibe_pp_bytes).unwrap();
 
-		assert!(res.is_some());
+		// we need to get the PublicKeyGroup element (G2)
+		let genesis_resharing = double_secret.reshare(
+			&vec![w3f_bls::single::PublicKey::<TinyBLS377>(
+				w3f_bls::double::DoublePublicKey::<TinyBLS377>::from_bytes(
+					&pair.public().to_raw_vec()
+				).unwrap().1
+			)],
+			1,
+			&mut OsRng,
+		).unwrap();
 
-		// // does not verify with default out-of-the-box verification
-		// assert!(!ecdsa_bls377::Pair::verify(&res.unwrap(), &msg[..], &pair.public()));
+		let mut pok_bytes = Vec::new();
+		genesis_resharing[0].1.serialize_compressed(&mut pok_bytes).unwrap();
 
-		// // should verify using keccak256 as hasher
-		// assert!(ecdsa_bls377::Pair::verify_with_hasher::<KeccakHasher>(
-		// 	&res.unwrap(),
-		// 	msg,
-		// 	&pair.public()
-		// ));
+		let expected_valid_public = genesis_resharing[0].0;
+		// panic!("{:?}", expected_valid_public);
+		// let etf_id = bls377::Public::from(expected_valid_public);
+		
+		// let mut res = store.acss_recover(BLS377, &pair.public(), &pok_bytes[..], msg, 1);
+		// assert!(bls377::Pair::verify(&res.unwrap(), &msg[..], &etf_id));
 	}
 
 	#[test]
@@ -658,50 +675,5 @@ mod tests {
 			store.bandersnatch_ring_vrf_sign(BANDERSNATCH, &pair.public(), &sign_data, &prover);
 
 		assert!(result.unwrap().is_some());
-	}
-
-	/// Helper function to prepare initial secrets and resharing for ETF conensus
-	/// return a vec of (authority id, resharing, pubkey commitment) along with ibe public key against the master secret
-	fn etf_genesis<EB: EngineBLS>(
-		initial_authorities: Vec<BeefyId>, 
-		seeds: Vec<&str>
-	) -> (Vec<u8>, Vec<(BeefyId, BeefyId, Vec<u8>)>) {
-	let msk = EB::Scalar::rand(&mut OsRng);
-	let msk_prime = EB::Scalar::rand(&mut OsRng);
-
-	let double_secret = DoubleSecret::<EB>(msk, msk_prime);
-
-	let ibe_pub_param = EB::PublicKeyGroup::generator() * msk;
-	let mut ibe_pp_bytes = Vec::new();
-	ibe_pub_param.serialize_compressed(&mut ibe_pp_bytes).unwrap();
-
-	// we need to get the PublicKeyGroup element (G2)
-	let genesis_resharing = double_secret.reshare(
-		&initial_authorities.iter().map(|authority| {
-			// panic!(authority.to_raw_vec());
-			w3f_bls::single::PublicKey::<EB>(
-				w3f_bls::double::DoublePublicKey::<EB>::from_bytes(
-					&authority.to_raw_vec()
-				).unwrap().1
-			)
-		}).collect::<Vec<_>>(), 
-		initial_authorities.len() as u8, // threshold = full set of authorities for now
-		&mut OsRng,
-	).unwrap();
-
-	let resharings = initial_authorities.iter().enumerate().map(|(idx, auth)| {
-		let pok = &genesis_resharing[idx].1;
-		let mut bytes = Vec::new();
-		pok.serialize_compressed(&mut bytes).unwrap();
-
-		let seed = seeds[idx];
-		let test = get_pair_from_seed::<BeefyId>(seed);
-		let t = sp_core::bls::Pair::<TinyBLS377>::from(test);
-		let o = t.acss_recover(&bytes, initial_authorities.len() as u8)
-			.expect("genesis shares should be well formatted");
-		let etf_id = BeefyId::from(o.public());
-		(auth.clone(), etf_id, bytes)
-	}).collect::<Vec<_>>();
-	(ibe_pp_bytes, resharings)
 	}
 }
