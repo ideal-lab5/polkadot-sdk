@@ -153,8 +153,7 @@ impl<T: EngineBLS> Pair<T> {
 	/// attempt to recover a keypair from the proof of knowledge
 	pub fn acss_recover(&self, pok_bytes: &[u8], threshold: u8) -> Option<Self> {
 		let mutable_self = self.clone();
-		if let Ok(pok) = BatchPoK::<T::PublicKeyGroup>::
-			deserialize_compressed(&pok_bytes[..]) {
+		if let Ok(pok) = BatchPoK::<T::PublicKeyGroup>::deserialize_compressed(&pok_bytes[..]) {
 			let sk = ETFKeypair(mutable_self.0.into_vartime());
 			if let Ok(recovered) = sk.recover(pok, threshold) {
 				let secret = w3f_bls::SecretKeyVT(recovered.0).into_split_dirty();
@@ -184,7 +183,7 @@ impl<T: BlsBound> TraitPair for Pair<T> {
 
 	fn derive<Iter: Iterator<Item = DeriveJunction>>(
 		&self,
-		path: Iter, 
+		path: Iter,
 		seed: Option<Seed>,
 	) -> Result<(Self, Option<Seed>), DeriveError> {
 		let mut acc: [u8; SECRET_KEY_SERIALIZED_SIZE] =
@@ -443,7 +442,8 @@ mod tests {
 	}
 
 	#[test]
-	fn acss_recover_works() {
-		
+	fn acss_returns_none_with_bad_pok() {
+		let pair = Pair::from_seed(b"12345678901234567890123456789012");
+		assert!(pair.acss_recover(vec![], 0).is_none());
 	}
 }
