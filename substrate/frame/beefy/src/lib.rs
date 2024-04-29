@@ -384,18 +384,6 @@ impl<T: Config> Pallet<T> {
 		);
 		Ok(())
 	}
-
-	// /// # Invariants
-	// ///
-	// /// `shares` must be present on genesis
-	// fn try_state_resharings() -> Result<(), sp_runtime::TryRuntimeError> {
-	// 	let shares = <Shares<T>>::get();
-	// 	ensure!(
-	// 		!shares.is_empty(),
-	// 		"A valid resharing must be present on genesis"
-	// 	);
-	// 	Ok(())
-	// }
 }
 
 impl<T: Config> Pallet<T> {
