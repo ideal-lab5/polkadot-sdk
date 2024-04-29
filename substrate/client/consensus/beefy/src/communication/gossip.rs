@@ -40,8 +40,14 @@ use crate::{
 	keystore::BeefyKeystore,
 	LOG_TARGET,
 };
+
+#[cfg(feature = "bls-experimental")]
+use sp_consensus_beefy::bls_crypto::{AuthorityId, Signature};
+
+#[cfg(not(feature = "bls-experimental"))]
+use sp_consensus_beefy::ecdsa_crypto::{AuthorityId, Signature};
+
 use sp_consensus_beefy::{
-	bls_crypto::{AuthorityId, Signature},
 	ValidatorSet, ValidatorSetId, VoteMessage,
 };
 
@@ -488,298 +494,298 @@ where
 	}
 }
 
-// #[cfg(test)]
-// pub(crate) mod tests {
-// 	use super::*;
-// 	use crate::keystore::BeefyKeystore;
-// 	use sc_network_test::Block;
-// 	use sp_application_crypto::key_types::BEEFY as BEEFY_KEY_TYPE;
-// 	use sp_consensus_beefy::{
-// 		ecdsa_crypto::Signature, known_payloads, test_utils::Keyring, Commitment, MmrRootHash,
-// 		Payload, SignedCommitment, VoteMessage,
-// 	};
-// 	use sp_keystore::{testing::MemoryKeystore, Keystore};
+#[cfg(test)]
+pub(crate) mod tests {
+	use super::*;
+	use crate::keystore::BeefyKeystore;
+	use sc_network_test::Block;
+	use sp_application_crypto::key_types::BEEFY as BEEFY_KEY_TYPE;
+	use sp_consensus_beefy::{
+		ecdsa_crypto::Signature, known_payloads, test_utils::Keyring, Commitment, MmrRootHash,
+		Payload, SignedCommitment, VoteMessage,
+	};
+	use sp_keystore::{testing::MemoryKeystore, Keystore};
 
-// 	struct TestContext;
-// 	impl<B: sp_runtime::traits::Block> ValidatorContext<B> for TestContext {
-// 		fn broadcast_topic(&mut self, _topic: B::Hash, _force: bool) {
-// 			todo!()
-// 		}
+	struct TestContext;
+	impl<B: sp_runtime::traits::Block> ValidatorContext<B> for TestContext {
+		fn broadcast_topic(&mut self, _topic: B::Hash, _force: bool) {
+			todo!()
+		}
 
-// 		fn broadcast_message(&mut self, _topic: B::Hash, _message: Vec<u8>, _force: bool) {}
+		fn broadcast_message(&mut self, _topic: B::Hash, _message: Vec<u8>, _force: bool) {}
 
-// 		fn send_message(&mut self, _who: &sc_network::PeerId, _message: Vec<u8>) {
-// 			todo!()
-// 		}
+		fn send_message(&mut self, _who: &sc_network::PeerId, _message: Vec<u8>) {
+			todo!()
+		}
 
-// 		fn send_topic(&mut self, _who: &sc_network::PeerId, _topic: B::Hash, _force: bool) {
-// 			todo!()
-// 		}
-// 	}
+		fn send_topic(&mut self, _who: &sc_network::PeerId, _topic: B::Hash, _force: bool) {
+			todo!()
+		}
+	}
 
-// 	pub fn sign_commitment<BN: Encode>(
-// 		who: &Keyring<AuthorityId>,
-// 		commitment: &Commitment<BN>,
-// 	) -> Signature {
-// 		let store = MemoryKeystore::new();
-// 		store.ecdsa_generate_new(BEEFY_KEY_TYPE, Some(&who.to_seed())).unwrap();
-// 		let beefy_keystore: BeefyKeystore<AuthorityId> = Some(store.into()).into();
-// 		beefy_keystore.sign(&who.public(), &commitment.encode()).unwrap()
-// 	}
+	pub fn sign_commitment<BN: Encode>(
+		who: &Keyring<AuthorityId>,
+		commitment: &Commitment<BN>,
+	) -> Signature {
+		let store = MemoryKeystore::new();
+		store.ecdsa_generate_new(BEEFY_KEY_TYPE, Some(&who.to_seed())).unwrap();
+		let beefy_keystore: BeefyKeystore<AuthorityId> = Some(store.into()).into();
+		beefy_keystore.sign(&who.public(), &commitment.encode()).unwrap()
+	}
 
-// 	fn dummy_vote(block_number: u64) -> VoteMessage<u64, AuthorityId, Signature> {
-// 		let payload = Payload::from_single_entry(
-// 			known_payloads::MMR_ROOT_ID,
-// 			MmrRootHash::default().encode(),
-// 		);
-// 		let commitment = Commitment { payload, block_number, validator_set_id: 0 };
-// 		let signature = sign_commitment(&Keyring::Alice, &commitment);
+	fn dummy_vote(block_number: u64) -> VoteMessage<u64, AuthorityId, Signature> {
+		let payload = Payload::from_single_entry(
+			known_payloads::MMR_ROOT_ID,
+			MmrRootHash::default().encode(),
+		);
+		let commitment = Commitment { payload, block_number, validator_set_id: 0 };
+		let signature = sign_commitment(&Keyring::Alice, &commitment);
 
-// 		VoteMessage { commitment, id: Keyring::Alice.public(), signature }
-// 	}
+		VoteMessage { commitment, id: Keyring::Alice.public(), signature }
+	}
 
-// 	pub fn dummy_proof(
-// 		block_number: u64,
-// 		validator_set: &ValidatorSet<AuthorityId>,
-// 	) -> BeefyVersionedFinalityProof<Block> {
-// 		let payload = Payload::from_single_entry(
-// 			known_payloads::MMR_ROOT_ID,
-// 			MmrRootHash::default().encode(),
-// 		);
-// 		let commitment = Commitment { payload, block_number, validator_set_id: validator_set.id() };
-// 		let signatures = validator_set
-// 			.validators()
-// 			.iter()
-// 			.map(|validator: &AuthorityId| {
-// 				Some(sign_commitment(
-// 					&Keyring::<AuthorityId>::from_public(validator).unwrap(),
-// 					&commitment,
-// 				))
-// 			})
-// 			.collect();
+	pub fn dummy_proof(
+		block_number: u64,
+		validator_set: &ValidatorSet<AuthorityId>,
+	) -> BeefyVersionedFinalityProof<Block> {
+		let payload = Payload::from_single_entry(
+			known_payloads::MMR_ROOT_ID,
+			MmrRootHash::default().encode(),
+		);
+		let commitment = Commitment { payload, block_number, validator_set_id: validator_set.id() };
+		let signatures = validator_set
+			.validators()
+			.iter()
+			.map(|validator: &AuthorityId| {
+				Some(sign_commitment(
+					&Keyring::<AuthorityId>::from_public(validator).unwrap(),
+					&commitment,
+				))
+			})
+			.collect();
 
-// 		BeefyVersionedFinalityProof::<Block>::V1(SignedCommitment { commitment, signatures })
-// 	}
+		BeefyVersionedFinalityProof::<Block>::V1(SignedCommitment { commitment, signatures })
+	}
 
-// 	#[test]
-// 	fn should_validate_messages() {
-// 		let keys = vec![Keyring::<AuthorityId>::Alice.public()];
-// 		let validator_set = ValidatorSet::<AuthorityId>::new(keys.clone(), 0).unwrap();
-// 		let (gv, mut report_stream) =
-// 			GossipValidator::<Block>::new(Arc::new(Mutex::new(KnownPeers::new())));
-// 		let sender = PeerId::random();
-// 		let mut context = TestContext;
+	#[test]
+	fn should_validate_messages() {
+		let keys = vec![Keyring::<AuthorityId>::Alice.public()];
+		let validator_set = ValidatorSet::<AuthorityId>::new(keys.clone(), 0).unwrap();
+		let (gv, mut report_stream) =
+			GossipValidator::<Block>::new(Arc::new(Mutex::new(KnownPeers::new())));
+		let sender = PeerId::random();
+		let mut context = TestContext;
 
-// 		// reject message, decoding error
-// 		let bad_encoding = b"0000000000".as_slice();
-// 		let expected_cost = ReputationChange::new(
-// 			(bad_encoding.len() as i32).saturating_mul(cost::PER_UNDECODABLE_BYTE),
-// 			"BEEFY: Bad packet",
-// 		);
-// 		let mut expected_report = PeerReport { who: sender, cost_benefit: expected_cost };
-// 		let res = gv.validate(&mut context, &sender, bad_encoding);
-// 		assert!(matches!(res, ValidationResult::Discard));
-// 		assert_eq!(report_stream.try_recv().unwrap(), expected_report);
+		// reject message, decoding error
+		let bad_encoding = b"0000000000".as_slice();
+		let expected_cost = ReputationChange::new(
+			(bad_encoding.len() as i32).saturating_mul(cost::PER_UNDECODABLE_BYTE),
+			"BEEFY: Bad packet",
+		);
+		let mut expected_report = PeerReport { who: sender, cost_benefit: expected_cost };
+		let res = gv.validate(&mut context, &sender, bad_encoding);
+		assert!(matches!(res, ValidationResult::Discard));
+		assert_eq!(report_stream.try_recv().unwrap(), expected_report);
 
-// 		// verify votes validation
+		// verify votes validation
 
-// 		let vote = dummy_vote(3);
-// 		let encoded = GossipMessage::<Block>::Vote(vote.clone()).encode();
+		let vote = dummy_vote(3);
+		let encoded = GossipMessage::<Block>::Vote(vote.clone()).encode();
 
-// 		// filter not initialized
-// 		let res = gv.validate(&mut context, &sender, &encoded);
-// 		assert!(matches!(res, ValidationResult::Discard));
-// 		// nothing reported
-// 		assert!(report_stream.try_recv().is_err());
+		// filter not initialized
+		let res = gv.validate(&mut context, &sender, &encoded);
+		assert!(matches!(res, ValidationResult::Discard));
+		// nothing reported
+		assert!(report_stream.try_recv().is_err());
 
-// 		gv.update_filter(GossipFilterCfg { start: 0, end: 10, validator_set: &validator_set });
-// 		// nothing in cache first time
-// 		let res = gv.validate(&mut context, &sender, &encoded);
-// 		assert!(matches!(res, ValidationResult::ProcessAndKeep(_)));
-// 		expected_report.cost_benefit = benefit::VOTE_MESSAGE;
-// 		assert_eq!(report_stream.try_recv().unwrap(), expected_report);
+		gv.update_filter(GossipFilterCfg { start: 0, end: 10, validator_set: &validator_set });
+		// nothing in cache first time
+		let res = gv.validate(&mut context, &sender, &encoded);
+		assert!(matches!(res, ValidationResult::ProcessAndKeep(_)));
+		expected_report.cost_benefit = benefit::VOTE_MESSAGE;
+		assert_eq!(report_stream.try_recv().unwrap(), expected_report);
 
-// 		// reject vote, voter not in validator set
-// 		let mut bad_vote = vote.clone();
-// 		bad_vote.id = Keyring::Bob.public();
-// 		let bad_vote = GossipMessage::<Block>::Vote(bad_vote).encode();
-// 		let res = gv.validate(&mut context, &sender, &bad_vote);
-// 		assert!(matches!(res, ValidationResult::Discard));
-// 		expected_report.cost_benefit = cost::UNKNOWN_VOTER;
-// 		assert_eq!(report_stream.try_recv().unwrap(), expected_report);
+		// reject vote, voter not in validator set
+		let mut bad_vote = vote.clone();
+		bad_vote.id = Keyring::Bob.public();
+		let bad_vote = GossipMessage::<Block>::Vote(bad_vote).encode();
+		let res = gv.validate(&mut context, &sender, &bad_vote);
+		assert!(matches!(res, ValidationResult::Discard));
+		expected_report.cost_benefit = cost::UNKNOWN_VOTER;
+		assert_eq!(report_stream.try_recv().unwrap(), expected_report);
 
-// 		// reject if the round is not GRANDPA finalized
-// 		gv.update_filter(GossipFilterCfg { start: 1, end: 2, validator_set: &validator_set });
-// 		let number = vote.commitment.block_number;
-// 		let set_id = vote.commitment.validator_set_id;
-// 		assert_eq!(gv.gossip_filter.read().consider_vote(number, set_id), Consider::RejectFuture);
-// 		let res = gv.validate(&mut context, &sender, &encoded);
-// 		assert!(matches!(res, ValidationResult::Discard));
-// 		expected_report.cost_benefit = cost::FUTURE_MESSAGE;
-// 		assert_eq!(report_stream.try_recv().unwrap(), expected_report);
+		// reject if the round is not GRANDPA finalized
+		gv.update_filter(GossipFilterCfg { start: 1, end: 2, validator_set: &validator_set });
+		let number = vote.commitment.block_number;
+		let set_id = vote.commitment.validator_set_id;
+		assert_eq!(gv.gossip_filter.read().consider_vote(number, set_id), Consider::RejectFuture);
+		let res = gv.validate(&mut context, &sender, &encoded);
+		assert!(matches!(res, ValidationResult::Discard));
+		expected_report.cost_benefit = cost::FUTURE_MESSAGE;
+		assert_eq!(report_stream.try_recv().unwrap(), expected_report);
 
-// 		// reject if the round is not live anymore
-// 		gv.update_filter(GossipFilterCfg { start: 7, end: 10, validator_set: &validator_set });
-// 		let number = vote.commitment.block_number;
-// 		let set_id = vote.commitment.validator_set_id;
-// 		assert_eq!(gv.gossip_filter.read().consider_vote(number, set_id), Consider::RejectPast);
-// 		let res = gv.validate(&mut context, &sender, &encoded);
-// 		assert!(matches!(res, ValidationResult::Discard));
-// 		expected_report.cost_benefit = cost::OUTDATED_MESSAGE;
-// 		assert_eq!(report_stream.try_recv().unwrap(), expected_report);
+		// reject if the round is not live anymore
+		gv.update_filter(GossipFilterCfg { start: 7, end: 10, validator_set: &validator_set });
+		let number = vote.commitment.block_number;
+		let set_id = vote.commitment.validator_set_id;
+		assert_eq!(gv.gossip_filter.read().consider_vote(number, set_id), Consider::RejectPast);
+		let res = gv.validate(&mut context, &sender, &encoded);
+		assert!(matches!(res, ValidationResult::Discard));
+		expected_report.cost_benefit = cost::OUTDATED_MESSAGE;
+		assert_eq!(report_stream.try_recv().unwrap(), expected_report);
 
-// 		// now verify proofs validation
+		// now verify proofs validation
 
-// 		// reject old proof
-// 		let proof = dummy_proof(5, &validator_set);
-// 		let encoded_proof = GossipMessage::<Block>::FinalityProof(proof).encode();
-// 		let res = gv.validate(&mut context, &sender, &encoded_proof);
-// 		assert!(matches!(res, ValidationResult::Discard));
-// 		expected_report.cost_benefit = cost::OUTDATED_MESSAGE;
-// 		assert_eq!(report_stream.try_recv().unwrap(), expected_report);
+		// reject old proof
+		let proof = dummy_proof(5, &validator_set);
+		let encoded_proof = GossipMessage::<Block>::FinalityProof(proof).encode();
+		let res = gv.validate(&mut context, &sender, &encoded_proof);
+		assert!(matches!(res, ValidationResult::Discard));
+		expected_report.cost_benefit = cost::OUTDATED_MESSAGE;
+		assert_eq!(report_stream.try_recv().unwrap(), expected_report);
 
-// 		// accept next proof with good set_id
-// 		let proof = dummy_proof(7, &validator_set);
-// 		let encoded_proof = GossipMessage::<Block>::FinalityProof(proof).encode();
-// 		let res = gv.validate(&mut context, &sender, &encoded_proof);
-// 		assert!(matches!(res, ValidationResult::ProcessAndKeep(_)));
-// 		expected_report.cost_benefit = benefit::VALIDATED_PROOF;
-// 		assert_eq!(report_stream.try_recv().unwrap(), expected_report);
+		// accept next proof with good set_id
+		let proof = dummy_proof(7, &validator_set);
+		let encoded_proof = GossipMessage::<Block>::FinalityProof(proof).encode();
+		let res = gv.validate(&mut context, &sender, &encoded_proof);
+		assert!(matches!(res, ValidationResult::ProcessAndKeep(_)));
+		expected_report.cost_benefit = benefit::VALIDATED_PROOF;
+		assert_eq!(report_stream.try_recv().unwrap(), expected_report);
 
-// 		// accept future proof with good set_id
-// 		let proof = dummy_proof(20, &validator_set);
-// 		let encoded_proof = GossipMessage::<Block>::FinalityProof(proof).encode();
-// 		let res = gv.validate(&mut context, &sender, &encoded_proof);
-// 		assert!(matches!(res, ValidationResult::ProcessAndKeep(_)));
-// 		expected_report.cost_benefit = benefit::VALIDATED_PROOF;
-// 		assert_eq!(report_stream.try_recv().unwrap(), expected_report);
+		// accept future proof with good set_id
+		let proof = dummy_proof(20, &validator_set);
+		let encoded_proof = GossipMessage::<Block>::FinalityProof(proof).encode();
+		let res = gv.validate(&mut context, &sender, &encoded_proof);
+		assert!(matches!(res, ValidationResult::ProcessAndKeep(_)));
+		expected_report.cost_benefit = benefit::VALIDATED_PROOF;
+		assert_eq!(report_stream.try_recv().unwrap(), expected_report);
 
-// 		// reject proof, future set_id
-// 		let bad_validator_set = ValidatorSet::<AuthorityId>::new(keys, 1).unwrap();
-// 		let proof = dummy_proof(20, &bad_validator_set);
-// 		let encoded_proof = GossipMessage::<Block>::FinalityProof(proof).encode();
-// 		let res = gv.validate(&mut context, &sender, &encoded_proof);
-// 		assert!(matches!(res, ValidationResult::Discard));
-// 		expected_report.cost_benefit = cost::FUTURE_MESSAGE;
-// 		assert_eq!(report_stream.try_recv().unwrap(), expected_report);
+		// reject proof, future set_id
+		let bad_validator_set = ValidatorSet::<AuthorityId>::new(keys, 1).unwrap();
+		let proof = dummy_proof(20, &bad_validator_set);
+		let encoded_proof = GossipMessage::<Block>::FinalityProof(proof).encode();
+		let res = gv.validate(&mut context, &sender, &encoded_proof);
+		assert!(matches!(res, ValidationResult::Discard));
+		expected_report.cost_benefit = cost::FUTURE_MESSAGE;
+		assert_eq!(report_stream.try_recv().unwrap(), expected_report);
 
-// 		// reject proof, bad signatures (Bob instead of Alice)
-// 		let bad_validator_set =
-// 			ValidatorSet::<AuthorityId>::new(vec![Keyring::Bob.public()], 0).unwrap();
-// 		let proof = dummy_proof(21, &bad_validator_set);
-// 		let encoded_proof = GossipMessage::<Block>::FinalityProof(proof).encode();
-// 		let res = gv.validate(&mut context, &sender, &encoded_proof);
-// 		assert!(matches!(res, ValidationResult::Discard));
-// 		expected_report.cost_benefit = cost::INVALID_PROOF;
-// 		expected_report.cost_benefit.value += cost::PER_SIGNATURE_CHECKED;
-// 		assert_eq!(report_stream.try_recv().unwrap(), expected_report);
-// 	}
+		// reject proof, bad signatures (Bob instead of Alice)
+		let bad_validator_set =
+			ValidatorSet::<AuthorityId>::new(vec![Keyring::Bob.public()], 0).unwrap();
+		let proof = dummy_proof(21, &bad_validator_set);
+		let encoded_proof = GossipMessage::<Block>::FinalityProof(proof).encode();
+		let res = gv.validate(&mut context, &sender, &encoded_proof);
+		assert!(matches!(res, ValidationResult::Discard));
+		expected_report.cost_benefit = cost::INVALID_PROOF;
+		expected_report.cost_benefit.value += cost::PER_SIGNATURE_CHECKED;
+		assert_eq!(report_stream.try_recv().unwrap(), expected_report);
+	}
 
-// 	#[test]
-// 	fn messages_allowed_and_expired() {
-// 		let keys = vec![Keyring::Alice.public()];
-// 		let validator_set = ValidatorSet::<AuthorityId>::new(keys.clone(), 0).unwrap();
-// 		let (gv, _) = GossipValidator::<Block>::new(Arc::new(Mutex::new(KnownPeers::new())));
-// 		gv.update_filter(GossipFilterCfg { start: 0, end: 10, validator_set: &validator_set });
-// 		let sender = sc_network::PeerId::random();
-// 		let topic = Default::default();
-// 		let intent = MessageIntent::Broadcast;
+	#[test]
+	fn messages_allowed_and_expired() {
+		let keys = vec![Keyring::Alice.public()];
+		let validator_set = ValidatorSet::<AuthorityId>::new(keys.clone(), 0).unwrap();
+		let (gv, _) = GossipValidator::<Block>::new(Arc::new(Mutex::new(KnownPeers::new())));
+		gv.update_filter(GossipFilterCfg { start: 0, end: 10, validator_set: &validator_set });
+		let sender = sc_network::PeerId::random();
+		let topic = Default::default();
+		let intent = MessageIntent::Broadcast;
 
-// 		// conclude 2
-// 		gv.update_filter(GossipFilterCfg { start: 2, end: 10, validator_set: &validator_set });
-// 		let mut allowed = gv.message_allowed();
-// 		let mut expired = gv.message_expired();
+		// conclude 2
+		gv.update_filter(GossipFilterCfg { start: 2, end: 10, validator_set: &validator_set });
+		let mut allowed = gv.message_allowed();
+		let mut expired = gv.message_expired();
 
-// 		// check bad vote format
-// 		assert!(!allowed(&sender, intent, &topic, &mut [0u8; 16]));
-// 		assert!(expired(topic, &mut [0u8; 16]));
+		// check bad vote format
+		assert!(!allowed(&sender, intent, &topic, &mut [0u8; 16]));
+		assert!(expired(topic, &mut [0u8; 16]));
 
-// 		// inactive round 1 -> expired
-// 		let vote = dummy_vote(1);
-// 		let mut encoded_vote = GossipMessage::<Block>::Vote(vote).encode();
-// 		assert!(!allowed(&sender, intent, &topic, &mut encoded_vote));
-// 		assert!(expired(topic, &mut encoded_vote));
-// 		let proof = dummy_proof(1, &validator_set);
-// 		let mut encoded_proof = GossipMessage::<Block>::FinalityProof(proof).encode();
-// 		assert!(!allowed(&sender, intent, &topic, &mut encoded_proof));
-// 		assert!(expired(topic, &mut encoded_proof));
+		// inactive round 1 -> expired
+		let vote = dummy_vote(1);
+		let mut encoded_vote = GossipMessage::<Block>::Vote(vote).encode();
+		assert!(!allowed(&sender, intent, &topic, &mut encoded_vote));
+		assert!(expired(topic, &mut encoded_vote));
+		let proof = dummy_proof(1, &validator_set);
+		let mut encoded_proof = GossipMessage::<Block>::FinalityProof(proof).encode();
+		assert!(!allowed(&sender, intent, &topic, &mut encoded_proof));
+		assert!(expired(topic, &mut encoded_proof));
 
-// 		// active round 2 -> !expired - concluded but still gossiped
-// 		let vote = dummy_vote(2);
-// 		let mut encoded_vote = GossipMessage::<Block>::Vote(vote).encode();
-// 		assert!(allowed(&sender, intent, &topic, &mut encoded_vote));
-// 		assert!(!expired(topic, &mut encoded_vote));
-// 		let proof = dummy_proof(2, &validator_set);
-// 		let mut encoded_proof = GossipMessage::<Block>::FinalityProof(proof).encode();
-// 		assert!(allowed(&sender, intent, &topic, &mut encoded_proof));
-// 		assert!(!expired(topic, &mut encoded_proof));
-// 		// using wrong set_id -> !allowed, expired
-// 		let bad_validator_set = ValidatorSet::<AuthorityId>::new(keys.clone(), 1).unwrap();
-// 		let proof = dummy_proof(2, &bad_validator_set);
-// 		let mut encoded_proof = GossipMessage::<Block>::FinalityProof(proof).encode();
-// 		assert!(!allowed(&sender, intent, &topic, &mut encoded_proof));
-// 		assert!(expired(topic, &mut encoded_proof));
+		// active round 2 -> !expired - concluded but still gossiped
+		let vote = dummy_vote(2);
+		let mut encoded_vote = GossipMessage::<Block>::Vote(vote).encode();
+		assert!(allowed(&sender, intent, &topic, &mut encoded_vote));
+		assert!(!expired(topic, &mut encoded_vote));
+		let proof = dummy_proof(2, &validator_set);
+		let mut encoded_proof = GossipMessage::<Block>::FinalityProof(proof).encode();
+		assert!(allowed(&sender, intent, &topic, &mut encoded_proof));
+		assert!(!expired(topic, &mut encoded_proof));
+		// using wrong set_id -> !allowed, expired
+		let bad_validator_set = ValidatorSet::<AuthorityId>::new(keys.clone(), 1).unwrap();
+		let proof = dummy_proof(2, &bad_validator_set);
+		let mut encoded_proof = GossipMessage::<Block>::FinalityProof(proof).encode();
+		assert!(!allowed(&sender, intent, &topic, &mut encoded_proof));
+		assert!(expired(topic, &mut encoded_proof));
 
-// 		// in progress round 3 -> !expired
-// 		let vote = dummy_vote(3);
-// 		let mut encoded_vote = GossipMessage::<Block>::Vote(vote).encode();
-// 		assert!(allowed(&sender, intent, &topic, &mut encoded_vote));
-// 		assert!(!expired(topic, &mut encoded_vote));
-// 		let proof = dummy_proof(3, &validator_set);
-// 		let mut encoded_proof = GossipMessage::<Block>::FinalityProof(proof).encode();
-// 		assert!(allowed(&sender, intent, &topic, &mut encoded_proof));
-// 		assert!(!expired(topic, &mut encoded_proof));
+		// in progress round 3 -> !expired
+		let vote = dummy_vote(3);
+		let mut encoded_vote = GossipMessage::<Block>::Vote(vote).encode();
+		assert!(allowed(&sender, intent, &topic, &mut encoded_vote));
+		assert!(!expired(topic, &mut encoded_vote));
+		let proof = dummy_proof(3, &validator_set);
+		let mut encoded_proof = GossipMessage::<Block>::FinalityProof(proof).encode();
+		assert!(allowed(&sender, intent, &topic, &mut encoded_proof));
+		assert!(!expired(topic, &mut encoded_proof));
 
-// 		// unseen round 4 -> !expired
-// 		let vote = dummy_vote(4);
-// 		let mut encoded_vote = GossipMessage::<Block>::Vote(vote).encode();
-// 		assert!(allowed(&sender, intent, &topic, &mut encoded_vote));
-// 		assert!(!expired(topic, &mut encoded_vote));
-// 		let proof = dummy_proof(4, &validator_set);
-// 		let mut encoded_proof = GossipMessage::<Block>::FinalityProof(proof).encode();
-// 		assert!(allowed(&sender, intent, &topic, &mut encoded_proof));
-// 		assert!(!expired(topic, &mut encoded_proof));
+		// unseen round 4 -> !expired
+		let vote = dummy_vote(4);
+		let mut encoded_vote = GossipMessage::<Block>::Vote(vote).encode();
+		assert!(allowed(&sender, intent, &topic, &mut encoded_vote));
+		assert!(!expired(topic, &mut encoded_vote));
+		let proof = dummy_proof(4, &validator_set);
+		let mut encoded_proof = GossipMessage::<Block>::FinalityProof(proof).encode();
+		assert!(allowed(&sender, intent, &topic, &mut encoded_proof));
+		assert!(!expired(topic, &mut encoded_proof));
 
-// 		// future round 11 -> expired
-// 		let vote = dummy_vote(11);
-// 		let mut encoded_vote = GossipMessage::<Block>::Vote(vote).encode();
-// 		assert!(!allowed(&sender, intent, &topic, &mut encoded_vote));
-// 		assert!(expired(topic, &mut encoded_vote));
-// 		// future proofs allowed while same set_id -> allowed
-// 		let proof = dummy_proof(11, &validator_set);
-// 		let mut encoded_proof = GossipMessage::<Block>::FinalityProof(proof).encode();
-// 		assert!(allowed(&sender, intent, &topic, &mut encoded_proof));
-// 		assert!(!expired(topic, &mut encoded_proof));
-// 	}
+		// future round 11 -> expired
+		let vote = dummy_vote(11);
+		let mut encoded_vote = GossipMessage::<Block>::Vote(vote).encode();
+		assert!(!allowed(&sender, intent, &topic, &mut encoded_vote));
+		assert!(expired(topic, &mut encoded_vote));
+		// future proofs allowed while same set_id -> allowed
+		let proof = dummy_proof(11, &validator_set);
+		let mut encoded_proof = GossipMessage::<Block>::FinalityProof(proof).encode();
+		assert!(allowed(&sender, intent, &topic, &mut encoded_proof));
+		assert!(!expired(topic, &mut encoded_proof));
+	}
 
-// 	#[test]
-// 	fn messages_rebroadcast() {
-// 		let keys = vec![Keyring::Alice.public()];
-// 		let validator_set = ValidatorSet::<AuthorityId>::new(keys.clone(), 0).unwrap();
-// 		let (gv, _) = GossipValidator::<Block>::new(Arc::new(Mutex::new(KnownPeers::new())));
-// 		gv.update_filter(GossipFilterCfg { start: 0, end: 10, validator_set: &validator_set });
-// 		let sender = sc_network::PeerId::random();
-// 		let topic = Default::default();
+	#[test]
+	fn messages_rebroadcast() {
+		let keys = vec![Keyring::Alice.public()];
+		let validator_set = ValidatorSet::<AuthorityId>::new(keys.clone(), 0).unwrap();
+		let (gv, _) = GossipValidator::<Block>::new(Arc::new(Mutex::new(KnownPeers::new())));
+		gv.update_filter(GossipFilterCfg { start: 0, end: 10, validator_set: &validator_set });
+		let sender = sc_network::PeerId::random();
+		let topic = Default::default();
 
-// 		let vote = dummy_vote(1);
-// 		let mut encoded_vote = vote.encode();
+		let vote = dummy_vote(1);
+		let mut encoded_vote = vote.encode();
 
-// 		// re-broadcasting only allowed at `REBROADCAST_AFTER` intervals
-// 		let intent = MessageIntent::PeriodicRebroadcast;
-// 		let mut allowed = gv.message_allowed();
+		// re-broadcasting only allowed at `REBROADCAST_AFTER` intervals
+		let intent = MessageIntent::PeriodicRebroadcast;
+		let mut allowed = gv.message_allowed();
 
-// 		// rebroadcast not allowed so soon after GossipValidator creation
-// 		assert!(!allowed(&sender, intent, &topic, &mut encoded_vote));
+		// rebroadcast not allowed so soon after GossipValidator creation
+		assert!(!allowed(&sender, intent, &topic, &mut encoded_vote));
 
-// 		// hack the inner deadline to be `now`
-// 		*gv.next_rebroadcast.lock() = Instant::now();
+		// hack the inner deadline to be `now`
+		*gv.next_rebroadcast.lock() = Instant::now();
 
-// 		// still not allowed on old `allowed` closure result
-// 		assert!(!allowed(&sender, intent, &topic, &mut encoded_vote));
+		// still not allowed on old `allowed` closure result
+		assert!(!allowed(&sender, intent, &topic, &mut encoded_vote));
 
-// 		// renew closure result
-// 		let mut allowed = gv.message_allowed();
-// 		// rebroadcast should be allowed now
-// 		assert!(allowed(&sender, intent, &topic, &mut encoded_vote));
-// 	}
-// }
+		// renew closure result
+		let mut allowed = gv.message_allowed();
+		// rebroadcast should be allowed now
+		assert!(allowed(&sender, intent, &topic, &mut encoded_vote));
+	}
+}

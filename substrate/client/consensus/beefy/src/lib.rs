@@ -42,8 +42,15 @@ use sc_network_gossip::{GossipEngine, Network as GossipNetwork, Syncing as Gossi
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::{Backend as BlockchainBackend, HeaderBackend};
 use sp_consensus::{Error as ConsensusError, SyncOracle};
+
+#[cfg(feature = "bls-experimental")]
+use sp_consensus_beefy::bls_crypto::AuthorityId;
+
+#[cfg(not(feature = "bls-experimental"))]
+use sp_consensus_beefy::ecdsa_crypto::AuthorityId;
+
 use sp_consensus_beefy::{
-	bls_crypto::AuthorityId, BeefyApi, 
+	BeefyApi, 
 	ConsensusLog, MmrRootHash, 
 	PayloadProvider, ValidatorSet,
 	BEEFY_ENGINE_ID,

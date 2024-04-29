@@ -19,8 +19,14 @@
 use crate::keystore::BeefyKeystore;
 use codec::{DecodeAll, Encode};
 use sp_consensus::Error as ConsensusError;
+
+#[cfg(feature = "bls-experimental")]
+use sp_consensus_beefy::bls_crypto::{AuthorityId, Signature};
+
+#[cfg(not(feature = "bls-experimental"))]
+use sp_consensus_beefy::ecdsa_crypto::{AuthorityId, Signature};
+
 use sp_consensus_beefy::{
-	bls_crypto::{AuthorityId, Signature},
 	ValidatorSet, ValidatorSetId, VersionedFinalityProof,
 };
 use sp_runtime::traits::{Block as BlockT, NumberFor};

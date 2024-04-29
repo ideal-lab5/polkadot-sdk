@@ -20,8 +20,14 @@ use crate::LOG_TARGET;
 
 use codec::{Decode, Encode};
 use log::{debug, info};
+
+#[cfg(feature = "bls-experimental")]
+use sp_consensus_beefy::bls_crypto::{AuthorityId, Signature}; 
+
+#[cfg(not(feature = "bls-experimental"))]
+use sp_consensus_beefy::ecdsa_crypto::{AuthorityId, Signature}; 
+
 use sp_consensus_beefy::{
-	bls_crypto::{AuthorityId, Signature},
 	Commitment, EquivocationProof, SignedCommitment, ValidatorSet, ValidatorSetId, VoteMessage,
 };
 use sp_runtime::traits::{Block, NumberFor};

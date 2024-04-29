@@ -32,7 +32,7 @@ use crate::{
 	gossip_protocol_name,
 	justification::*,
 	wait_for_runtime_pallet,
-	worker::PersistedState,
+	worker::{PersistedState, VoterOracle},
 	BeefyRPCLinks, BeefyVoterLinks, BeefyWorkerBuilder, KnownPeers,
 };
 use futures::{future, stream::FuturesUnordered, Future, FutureExt, StreamExt};
@@ -54,7 +54,7 @@ use sp_api::{ApiRef, ProvideRuntimeApi};
 use sp_application_crypto::key_types::BEEFY as BEEFY_KEY_TYPE;
 use sp_consensus::BlockOrigin;
 use sp_consensus_beefy::{
-	bls_crypto::{AuthorityId, Signature},
+	ecdsa_crypto::{AuthorityId, Signature},
 	known_payloads,
 	mmr::{find_mmr_root_digest, MmrRootProvider},
 	test_utils::Keyring as BeefyKeyring,
@@ -368,7 +368,7 @@ pub(crate) fn make_beefy_ids(keys: &[BeefyKeyring<AuthorityId>]) -> Vec<Authorit
 pub(crate) fn create_beefy_keystore(authority: &BeefyKeyring<AuthorityId>) -> KeystorePtr {
 	let keystore = MemoryKeystore::new();
 	keystore
-		.bls377_generate_new(BEEFY_KEY_TYPE, Some(&authority.to_seed()))
+		.ecdsa_generate_new(BEEFY_KEY_TYPE, Some(&authority.to_seed()))
 		.expect("Creates authority key");
 	keystore.into()
 }

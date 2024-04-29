@@ -26,7 +26,13 @@ use sc_network::{
 	request_responses::{IfDisconnected, RequestFailure},
 	NetworkRequest, PeerId, ProtocolName,
 };
+
+#[cfg(feature = "bls-experimental")]
 use sp_consensus_beefy::{bls_crypto::AuthorityId, ValidatorSet};
+
+#[cfg(not(feature = "bls-experimental"))]
+use sp_consensus_beefy::{ecdsa_crypto::AuthorityId, ValidatorSet};
+
 use sp_runtime::traits::{Block, NumberFor};
 use std::{collections::VecDeque, result::Result, sync::Arc};
 
