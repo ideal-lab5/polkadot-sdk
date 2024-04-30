@@ -315,6 +315,11 @@ pub mod pallet {
 		fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
 			Self::do_try_state()
 		}
+
+		#[cfg(feature = "bls-experimental")]
+		fn offchain_worker(_n: BlockNumberFor<T>) {
+			// sp_io::offchain::rpc_query()
+		}
 	}
 
 	#[pallet::validate_unsigned]

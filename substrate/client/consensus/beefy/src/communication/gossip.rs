@@ -314,7 +314,7 @@ where
 		if BeefyKeystore::verify(&vote.id, &vote.signature, &vote.commitment.encode()) {
 				info!(
 					target: LOG_TARGET,
-					"🎲 The etf signature was verified!",
+					"🎲 The etf signature was verified",
 				);
 			Action::Keep(self.votes_topic, benefit::VOTE_MESSAGE)
 		} else {
