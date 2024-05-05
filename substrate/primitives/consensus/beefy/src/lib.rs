@@ -233,6 +233,7 @@ pub const GENESIS_AUTHORITY_SET_ID: u64 = 0;
 pub type ValidatorSetId = u64;
 
 /// A set of BEEFY authorities, a.k.a. validators.
+#[cfg(not(feature =  "bls-experimental"))]
 #[derive(Decode, Encode, Debug, PartialEq, Clone, TypeInfo)]
 pub struct ValidatorSet<AuthorityId> {
 	/// Public keys of the validator set elements
@@ -241,6 +242,19 @@ pub struct ValidatorSet<AuthorityId> {
 	id: ValidatorSetId,
 }
 
+/// A set of BEEFY authorities, a.k.a. validators.
+#[cfg(feature =  "bls-experimental")]
+#[derive(Decode, Encode, Debug, PartialEq, Clone, TypeInfo)]
+pub struct ValidatorSet<AuthorityId> {
+	/// Public keys of the validator set elements 
+	validators: Vec<AuthorityId>,
+	/// Public round key commitments for the validators
+	commitments: Vec<AuthorityId>,
+	/// Identifier of the validator set
+	id: ValidatorSetId,
+}
+
+#[cfg(not(feature =  "bls-experimental"))]
 impl<AuthorityId> ValidatorSet<AuthorityId> {
 	/// Return a validator set with the given validators and set id.
 	pub fn new<I>(validators: I, id: ValidatorSetId) -> Option<Self>
@@ -259,6 +273,45 @@ impl<AuthorityId> ValidatorSet<AuthorityId> {
 	/// Return a reference to the vec of validators.
 	pub fn validators(&self) -> &[AuthorityId] {
 		&self.validators
+	}
+
+	/// Return the validator set id.
+	pub fn id(&self) -> ValidatorSetId {
+		self.id
+	}
+
+	/// Return the number of validators in the set.
+	pub fn len(&self) -> usize {
+		self.validators.len()
+	}
+}
+
+#[cfg(feature = "bls-experimental")]
+impl<AuthorityId> ValidatorSet<AuthorityId> {
+	/// Return a validator set with the given validators and set id.
+	pub fn new<I>(validators: I, commitments: I, id: ValidatorSetId) -> Option<Self>
+	where
+		I: IntoIterator<Item = AuthorityId>,
+	{
+		let validators: Vec<AuthorityId> = validators.into_iter().collect();
+		let commitments: Vec<AuthorityId> = commitments.into_iter().collect();
+		if validators.is_empty() || validators.len() != commitments.len() {
+			// No validators; the set would be empty.
+			// Or the validator and commitment set are improperly allocated
+			None
+		} else {
+			Some(Self { validators, commitments, id })
+		}
+	}
+
+	/// Return a reference to the vec of validators.
+	pub fn validators(&self) -> &[AuthorityId] {
+		&self.validators
+	}
+
+	/// Return a reference to the vec of commitments.
+	pub fn commitments(&self) -> &[AuthorityId] {
+		&self.commitments
 	}
 
 	/// Return the validator set id.
@@ -464,10 +517,10 @@ sp_api::decl_runtime_apis! {
 			authority_id: AuthorityId,
 		) -> Option<OpaqueKeyOwnershipProof>;
 
-		/// ready a proof of knowledge from the Shares storage map
+		/// Return a proof of knowledge for async secret sharing
 		fn read_share(who: AuthorityId) -> Option<Vec<u8>>;
 
-		/// read a commitment from the Commitments storage map
+		/// Return a public key commitment for the current round for the authority if one exists
 		fn read_commitment(who: AuthorityId) -> Option<AuthorityId>;
 	}
 
@@ -482,6 +535,7 @@ mod tests {
 	use sp_runtime::traits::{BlakeTwo256, Keccak256};
 
 	#[test]
+	#[cfg(not(feature = "bls-experimental"))]
 	fn validator_set() {
 		// Empty set not allowed.
 		assert_eq!(ValidatorSet::<Public>::new(vec![], 0), None);
@@ -492,6 +546,26 @@ mod tests {
 
 		assert_eq!(validators.id(), set_id);
 		assert_eq!(validators.validators(), &vec![alice.public()]);
+	}
+
+	#[test]
+	#[cfg(feature = "bls-experimental")]
+	fn validator_set() {
+		// Empty set not allowed.
+		assert_eq!(ValidatorSet::<Public>::new(vec![], vec![], 0), None);
+
+		let alice = ecdsa::Pair::from_string("//Alice", None).unwrap();
+		let alice_stash = ecdsa::Pair::from_string("//AliceStash", None).unwrap();
+		let set_id = 0;
+		let validators = ValidatorSet::<Public>::new(
+			vec![alice.public()], 
+			vec![alice_stash.public()], 
+			set_id
+		).unwrap();
+
+		assert_eq!(validators.id(), set_id);
+		assert_eq!(validators.validators(), &vec![alice.public()]);
+		assert_eq!(validators.commitments(), &vec![alice_stash.public()]);
 	}
 
 	#[test]

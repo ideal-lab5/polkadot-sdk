@@ -213,7 +213,8 @@ impl<AuthorityId: AuthorityIdBound> BeefyKeystore<AuthorityId> {
 		message: &[u8],
 		threshold: u8,
 	) -> Result<<AuthorityId as RuntimeAppPublic>::Signature, error::Error> {
-		let store = self.0.clone().ok_or_else(|| error::Error::Keystore("no Keystore".into()))
+		let store = self.0.clone()
+			.ok_or_else(|| error::Error::Keystore("no Keystore".into()))
 			.map_err(|_| ())
 			.unwrap();
 
@@ -332,6 +333,14 @@ pub mod tests {
 			ecdsa_bls377::CRYPTO_ID => {
 				let pk = store
 					.ecdsa_bls377_generate_new(key_type, optional_seed.as_deref())
+					.ok()
+					.unwrap();
+				AuthorityId::decode(&mut pk.as_ref()).unwrap()
+			},
+			#[cfg(feature = "bls-experimental")]
+			bls377::CRYPTO_ID => {
+				let pk = store
+					.bls377_generate_new(key_type, optional_seed.as_deref())
 					.ok()
 					.unwrap();
 				AuthorityId::decode(&mut pk.as_ref()).unwrap()
@@ -627,7 +636,6 @@ pub mod tests {
 
 	#[cfg(feature = "bls-experimental")]
 	#[test]
-
 	fn public_keys_works_for_ecdsa_n_bls() {
 		public_keys_works::<ecdsa_bls_crypto::AuthorityId>();
 	}
