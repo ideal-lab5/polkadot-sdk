@@ -418,6 +418,9 @@ impl Keystore for LocalKeystore {
 			Ok(sig)
 		}
 
+		/// Run the async committee secret sharing `recovery` algorithm using a locally stored bls377 keypair
+		/// and use the resulting keypair to sign the input message
+		/// 
 		fn acss_recover(
 			&self, 
 			key_type: KeyTypeId,
@@ -429,20 +432,6 @@ impl Keystore for LocalKeystore {
 			if let Some(Some(etf_pair)) = self.0.read()
 				.key_pair_by_type::<bls377::Pair>(public, key_type)?
 				.map(|pair| pair.acss_recover(pok_bytes, threshold)) {
-				// .map(|pair| {
-				// 	if let Ok(pok) = BatchPoK::<<TinyBLS377 as EngineBLS>::PublicKeyGroup>::deserialize_compressed(&pok_bytes[..]) {
-				// 		let sk = ETFKeypair(pair.0.into_vartime());
-				// 		if let Ok(recovered) = sk.recover(pok, threshold) {
-				// 			let secret = w3f_bls::SecretKeyVT(recovered.0).into_split_dirty();
-				// 			let public = secret.into_public();
-				// 			return Some(bls::Pair(w3f_bls::Keypair {
-				// 				secret, public,
-				// 			}));
-				// 		}
-				// 	} 
-				// 	None
-				// }) {
-				// "IBE.Extract" Q = s*H(message) + DLEQ Proof
 				let extract = etf_pair.sign(&message);
 				return Ok(extract);
 			}
