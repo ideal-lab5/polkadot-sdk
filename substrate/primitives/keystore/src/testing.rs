@@ -359,6 +359,26 @@ impl Keystore for MemoryKeystore {
 		Ok(sig)
 	}
 
+	#[cfg(feature = "bls-experimental")]
+	fn acss_recover(
+		&self,
+		key_type: KeyTypeId,
+		public: &bls377::Public,
+		pok: &[u8],
+		msg: &[u8],
+		threshold: u8
+	) -> Result<bls377::Signature, Error> {
+		let sig = self.pair::<bls377::Pair>(key_type, public)
+			.map(|pair| pair.acss_recover(pok, threshold))
+			.ok_or(return Err(Error::Unavailable))?
+			.unwrap();
+		let extract = sig.sign(&msg);
+		// return Ok(extract);
+		Ok(extract)
+		// TODO
+		// return Err(Error::Unavailable);
+	}
+
 	fn insert(&self, key_type: KeyTypeId, suri: &str, public: &[u8]) -> Result<(), ()> {
 		self.keys
 			.write()
@@ -398,6 +418,12 @@ mod tests {
 		sr25519,
 		testing::{ECDSA, ED25519, SR25519},
 	};
+	// only needed for ETF resharing construction
+	use ark_serialize::CanonicalSerialize;
+	use ark_std::UniformRand;
+	use ark_ec::Group;
+	use rand::rngs::OsRng;
+	use w3f_bls::{EngineBLS, TinyBLS377, SerializableToBytes};
 
 	#[test]
 	fn store_key_and_extract() {
@@ -536,6 +562,54 @@ mod tests {
 			msg,
 			&pair.public()
 		));
+	}
+
+	#[test]
+	#[cfg(feature = "bls-experimental")]
+	fn bls377_acss_recover_works() {
+		use sp_core::testing::BLS377;
+
+		let store = MemoryKeystore::new();
+
+		let suri = "//Alice";
+		let pair = bls377::Pair::from_string(suri, None).unwrap();
+
+		let msg = b"this is a test message";
+
+		// insert key, sign again
+		store.insert(BLS377, suri, pair.public().as_ref()).unwrap();
+
+		let msk = <TinyBLS377 as EngineBLS>::Scalar::rand(&mut OsRng);
+		let msk_prime = <TinyBLS377 as EngineBLS>::Scalar::rand(&mut OsRng);
+		// build a resharing 
+		let double_secret = etf_crypto_primitives::dpss::DoubleSecret::<TinyBLS377>(
+			msk, msk_prime
+		);
+
+		let ibe_pub_param = <TinyBLS377 as EngineBLS>::PublicKeyGroup::generator() * msk;
+		let mut ibe_pp_bytes = Vec::new();
+		ibe_pub_param.serialize_compressed(&mut ibe_pp_bytes).unwrap();
+
+		// we need to get the PublicKeyGroup element (G2)
+		let genesis_resharing = double_secret.reshare(
+			&vec![w3f_bls::single::PublicKey::<TinyBLS377>(
+				w3f_bls::double::DoublePublicKey::<TinyBLS377>::from_bytes(
+					&pair.public().to_raw_vec()
+				).unwrap().1
+			)],
+			1,
+			&mut OsRng,
+		).unwrap();
+
+		let mut pok_bytes = Vec::new();
+		genesis_resharing[0].1.serialize_compressed(&mut pok_bytes).unwrap();
+
+		let expected_valid_public = genesis_resharing[0].0;
+		// panic!("{:?}", expected_valid_public);
+		// let etf_id = bls377::Public::from(expected_valid_public);
+		
+		// let mut res = store.acss_recover(BLS377, &pair.public(), &pok_bytes[..], msg, 1);
+		// assert!(bls377::Pair::verify(&res.unwrap(), &msg[..], &etf_id));
 	}
 
 	#[test]

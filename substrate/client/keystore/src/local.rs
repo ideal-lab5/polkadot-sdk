@@ -38,8 +38,8 @@ use sp_core::bandersnatch;
 
 sp_keystore::bls_experimental_enabled! {
 use sp_core::{bls377, bls381, ecdsa_bls377, KeccakHasher};
+pub const ETF_KEY_TYPE: KeyTypeId = KeyTypeId(*b"etfn");
 }
-
 use crate::{Error, Result};
 
 /// A local based keystore that is either memory-based or filesystem-based.
@@ -405,20 +405,37 @@ impl Keystore for LocalKeystore {
 			self.sign::<ecdsa_bls377::Pair>(key_type, public, msg)
 		}
 
-			fn ecdsa_bls377_sign_with_keccak256(
+		fn ecdsa_bls377_sign_with_keccak256(
 			&self,
 			key_type: KeyTypeId,
 			public: &ecdsa_bls377::Public,
 			msg: &[u8],
 		) -> std::result::Result<Option<ecdsa_bls377::Signature>, TraitError> {
 			 let sig = self.0
-			.read()
-			.key_pair_by_type::<ecdsa_bls377::Pair>(public, key_type)?
-			.map(|pair| pair.sign_with_hasher::<KeccakHasher>(msg));
+				.read()
+				.key_pair_by_type::<ecdsa_bls377::Pair>(public, key_type)?
+				.map(|pair| pair.sign_with_hasher::<KeccakHasher>(msg));
 			Ok(sig)
 		}
 
+		fn acss_recover(
+			&self, 
+			key_type: KeyTypeId,
+			public: &bls377::Public,
+			pok_bytes: &[u8],
+			message: &[u8],
+			threshold: u8,
+		) -> std::result::Result<bls377::Signature, TraitError>  {
+			if let Some(Some(etf_pair)) = self.0.read()
+				.key_pair_by_type::<bls377::Pair>(public, key_type)?
+				.map(|pair| pair.acss_recover(pok_bytes, threshold)) {
+				// "IBE.Extract" Q = s*H(message) + DLEQ Proof
+				let extract = etf_pair.sign(&message);
+				return Ok(extract);
+			}
 
+			Err(TraitError::KeyNotSupported(ETF_KEY_TYPE))
+		}
 	}
 }
 
