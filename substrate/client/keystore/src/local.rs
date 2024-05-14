@@ -38,8 +38,6 @@ use sp_core::bandersnatch;
 
 sp_keystore::bls_experimental_enabled! {
 use sp_core::{bls377, bls381, ecdsa_bls377, KeccakHasher};
-use w3f_bls::{EngineBLS, TinyBLS377};
-use etf_crypto_primitives::proofs::hashed_el_gamal_sigma::BatchPoK;
 pub const ETF_KEY_TYPE: KeyTypeId = KeyTypeId(*b"etfn");
 }
 use crate::{Error, Result};
@@ -433,20 +431,20 @@ impl Keystore for LocalKeystore {
 		) -> std::result::Result<bls377::Signature, TraitError>  {
 			if let Some(Some(etf_pair)) = self.0.read()
 				.key_pair_by_type::<bls377::Pair>(public, key_type)?
-				// .map(|pair| pair.acss_recover(pok_bytes, threshold)) {
-				.map(|pair| {
-					if let Ok(pok) = BatchPoK::<<TinyBLS377 as EngineBLS>::PublicKeyGroup>::deserialize_compressed(&pok_bytes[..]) {
-						let sk = ETFKeypair(pair.0.into_vartime());
-						if let Ok(recovered) = sk.recover(pok, threshold) {
-							let secret = w3f_bls::SecretKeyVT(recovered.0).into_split_dirty();
-							let public = secret.into_public();
-							return Pair(w3f_bls::Keypair {
-								secret, public,
-							});
-						}
-					} 
-					pair
-				}) {
+				.map(|pair| pair.acss_recover(pok_bytes, threshold)) {
+				// .map(|pair| {
+				// 	if let Ok(pok) = BatchPoK::<<TinyBLS377 as EngineBLS>::PublicKeyGroup>::deserialize_compressed(&pok_bytes[..]) {
+				// 		let sk = ETFKeypair(pair.0.into_vartime());
+				// 		if let Ok(recovered) = sk.recover(pok, threshold) {
+				// 			let secret = w3f_bls::SecretKeyVT(recovered.0).into_split_dirty();
+				// 			let public = secret.into_public();
+				// 			return Some(bls::Pair(w3f_bls::Keypair {
+				// 				secret, public,
+				// 			}));
+				// 		}
+				// 	} 
+				// 	None
+				// }) {
 				// "IBE.Extract" Q = s*H(message) + DLEQ Proof
 				let extract = etf_pair.sign(&message);
 				return Ok(extract);
