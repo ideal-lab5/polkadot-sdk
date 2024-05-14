@@ -2893,22 +2893,31 @@ dependencies = [
 
 [[package]]
 name = "chacha20poly1305"
+<<<<<<< HEAD
 >>>>>>> d2ca0ca088 (remove commented code)
+=======
+>>>>>>> d531ccf3a3 (add acss recovery to keystore)
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "10cd79432192d1c0f4e1a0fef9527696cc039165d729fb41b3f4f4f354c2dc35"
 dependencies = [
+<<<<<<< HEAD
 <<<<<<< HEAD
  "aead",
  "chacha20",
  "cipher 0.4.4",
  "poly1305",
 =======
+=======
+>>>>>>> d531ccf3a3 (add acss recovery to keystore)
  "aead 0.5.2",
  "chacha20 0.9.1",
  "cipher 0.4.4",
  "poly1305 0.8.0",
+<<<<<<< HEAD
 >>>>>>> d2ca0ca088 (remove commented code)
+=======
+>>>>>>> d531ccf3a3 (add acss recovery to keystore)
  "zeroize",
 ]
 
@@ -6035,6 +6044,7 @@ dependencies = [
 name = "etf-crypto-primitives"
 version = "0.2.4"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/ideal-lab5/etf-sdk/?branch=w3fbls-migration#227b8fedb6b6a5a0774ad0d4d1d54aefbfa3811c"
 dependencies = [
  "aes-gcm",
@@ -6043,6 +6053,11 @@ source = "git+http://github.com/ideal-lab5/etf-sdk?branch=w3fbls-migration#1f3f0
 dependencies = [
  "aes-gcm 0.10.3",
 >>>>>>> d2ca0ca088 (remove commented code)
+=======
+source = "git+https://github.com/ideal-lab5/etf-sdk/?branch=w3fbls-migration#1f3f02525197f49515681887e570711e722a02cf"
+dependencies = [
+ "aes-gcm 0.10.3",
+>>>>>>> d531ccf3a3 (add acss recovery to keystore)
  "ark-bls12-377",
  "ark-bls12-381",
  "ark-ec",
@@ -6051,12 +6066,17 @@ dependencies = [
  "ark-serialize 0.4.2",
  "ark-std 0.4.0",
 <<<<<<< HEAD
+<<<<<<< HEAD
  "array-bytes",
  "chacha20poly1305",
 =======
  "array-bytes 6.1.0",
  "chacha20poly1305 0.10.1",
 >>>>>>> d2ca0ca088 (remove commented code)
+=======
+ "array-bytes 6.1.0",
+ "chacha20poly1305 0.10.1",
+>>>>>>> d531ccf3a3 (add acss recovery to keystore)
  "generic-array 0.14.7",
  "parity-scale-codec",
  "rand_chacha 0.3.1",
@@ -6065,10 +6085,14 @@ dependencies = [
  "serde_cbor",
  "serde_json",
 <<<<<<< HEAD
+<<<<<<< HEAD
  "sha2 0.10.8",
 =======
  "sha2 0.10.7",
 >>>>>>> d2ca0ca088 (remove commented code)
+=======
+ "sha2 0.10.7",
+>>>>>>> d531ccf3a3 (add acss recovery to keystore)
  "sha3",
  "w3f-bls",
 ]
@@ -19197,7 +19221,10 @@ dependencies = [
 =======
  "ark-serialize 0.4.2",
  "array-bytes 6.1.0",
+<<<<<<< HEAD
 >>>>>>> d2ca0ca088 (remove commented code)
+=======
+>>>>>>> d531ccf3a3 (add acss recovery to keystore)
  "etf-crypto-primitives",
  "parking_lot 0.12.1",
  "serde_json",
