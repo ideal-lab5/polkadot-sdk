@@ -35,6 +35,13 @@ use w3f_bls::{
 	SecretKey, SerializableToBytes, TinyBLS381,
 };
 
+use etf_crypto_primitives::{
+	dpss::Keypair as ETFKeypair,
+	proofs::hashed_el_gamal_sigma::BatchPoK
+};
+
+use ark_serialize::CanonicalDeserialize;
+
 /// BLS-377 specialized types
 pub mod bls377 {
 	pub use super::{PUBLIC_KEY_SERIALIZED_SIZE, SIGNATURE_SERIALIZED_SIZE};
@@ -139,7 +146,24 @@ fn derive_hard_junction<T: HardJunctionId>(secret_seed: &Seed, cc: &[u8; 32]) ->
 	(T::ID, secret_seed, cc).using_encoded(sp_crypto_hashing::blake2_256)
 }
 
-impl<T: EngineBLS> Pair<T> {}
+impl<T: EngineBLS> Pair<T> {
+	/// the ACSS Recover algorithm
+	/// attempt to recover a keypair from the proof of knowledge
+	pub fn acss_recover(&self, pok_bytes: &[u8], threshold: u8) -> Option<Self> {
+		let mutable_self = self.clone();
+		if let Ok(pok) = BatchPoK::<T::PublicKeyGroup>::deserialize_compressed(&pok_bytes[..]) {
+			let sk = ETFKeypair(mutable_self.0.into_vartime());
+			if let Ok(recovered) = sk.recover(pok, threshold) {
+				let secret = w3f_bls::SecretKeyVT(recovered.0).into_split_dirty();
+				let public = secret.into_public();
+				return Some(Pair(w3f_bls::Keypair {
+					secret, public,
+				}));
+			}
+		}
+		None
+	}
+}
 
 impl<T: BlsBound> TraitPair for Pair<T> {
 	type Seed = Seed;
