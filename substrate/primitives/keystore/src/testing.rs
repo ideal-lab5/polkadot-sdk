@@ -368,15 +368,15 @@ impl Keystore for MemoryKeystore {
 		msg: &[u8],
 		threshold: u8
 	) -> Result<bls377::Signature, Error> {
-		let sig = self.pair::<bls377::Pair>(key_type, public)
-			.map(|pair| pair.acss_recover(pok, threshold))
-			.ok_or(return Err(Error::Unavailable))?
-			.unwrap();
-		let extract = sig.sign(&msg);
-		// return Ok(extract);
-		Ok(extract)
+		// let sig = self.pair::<bls377::Pair>(key_type, public)
+		// 	.map(|pair| pair.acss_recover(pok, threshold))
+		// 	.ok_or(return Err(Error::Unavailable))?
+		// 	.unwrap();
+		// let extract = sig.sign(&msg);
+		// // return Ok(extract);
+		// Ok(extract)
 		// TODO
-		// return Err(Error::Unavailable);
+		return Err(Error::Unavailable);
 	}
 
 	fn insert(&self, key_type: KeyTypeId, suri: &str, public: &[u8]) -> Result<(), ()> {
