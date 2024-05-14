@@ -432,6 +432,7 @@ impl Keystore for LocalKeystore {
 			if let Some(Some(etf_pair)) = self.0.read()
 				.key_pair_by_type::<bls377::Pair>(public, key_type)?
 				.map(|pair| pair.acss_recover(pok_bytes, threshold)) {
+				// "IBE.Extract" Q = s*H(message) + DLEQ Proof
 				let extract = etf_pair.sign(&message);
 				return Ok(extract);
 			}
