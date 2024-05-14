@@ -21,9 +21,7 @@ array-bytes = { workspace = true, default-features = true }
 parking_lot = { workspace = true, default-features = true }
 serde_json = { workspace = true, default-features = true }
 thiserror = { workspace = true }
-sp-application-crypto = { workspace = true, default-features = true }
-sp-core = { workspace = true, default-features = true }
-sp-keystore = { workspace = true, default-features = true }
+etf-crypto-primitives = { git = "http://github.com/ideal-lab5/etf-sdk", branch = "w3fbls-migration" }
 
 [dev-dependencies]
 tempfile = { workspace = true }
@@ -44,3 +42,5 @@ bandersnatch-experimental = [
 	"sp-core/bandersnatch-experimental",
 	"sp-keystore/bandersnatch-experimental",
 ]
+
+etf = []
