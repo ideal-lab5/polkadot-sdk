@@ -5287,7 +5287,7 @@ dependencies = [
 [[package]]
 name = "etf-crypto-primitives"
 version = "0.2.4"
-source = "git+https://github.com/ideal-lab5/etf-sdk?branch=jg/debug#41936cb490738b536d66cbf82b9713f6f87d434a"
+source = "git+http://github.com/ideal-lab5/etf-sdk?branch=w3fbls-migration#c6e61a89b94b57bcbde2293208a2875469f4fc5c"
 dependencies = [
  "aes-gcm",
  "ark-bls12-377",
@@ -17530,7 +17530,6 @@ dependencies = [
  "ark-serialize 0.4.2",
  "array-bytes",
  "etf-crypto-primitives",
- "log",
  "parking_lot 0.12.3",
  "serde_json",
  "sp-application-crypto",
