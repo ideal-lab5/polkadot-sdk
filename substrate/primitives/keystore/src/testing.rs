@@ -370,10 +370,8 @@ impl Keystore for MemoryKeystore {
 	) -> Result<bls377::Signature, Error> {
 		let sig = self.pair::<bls377::Pair>(key_type, public)
 			.map(|pair| pair.acss_recover(pok, threshold))
-			.ok_or(return Err(Error::Unavailable))?
-			.unwrap();
+			.unwrap().unwrap();
 		let extract = sig.sign(&msg);
-		// return Ok(extract);
 		Ok(extract)
 	}
 
@@ -571,9 +569,7 @@ mod tests {
 
 		let suri = "//Alice";
 		let pair = bls377::Pair::from_string(suri, None).unwrap();
-
 		let msg = b"this is a test message";
-
 		// insert key, sign again
 		store.insert(BLS377, suri, pair.public().as_ref()).unwrap();
 
@@ -588,7 +584,6 @@ mod tests {
 		let mut ibe_pp_bytes = Vec::new();
 		ibe_pub_param.serialize_compressed(&mut ibe_pp_bytes).unwrap();
 
-		// we need to get the PublicKeyGroup element (G2)
 		let genesis_resharing = double_secret.reshare(
 			&vec![w3f_bls::single::PublicKey::<TinyBLS377>(
 				w3f_bls::double::DoublePublicKey::<TinyBLS377>::from_bytes(
@@ -602,12 +597,12 @@ mod tests {
 		let mut pok_bytes = Vec::new();
 		genesis_resharing[0].1.serialize_compressed(&mut pok_bytes).unwrap();
 
-		let expected_valid_public = genesis_resharing[0].0;
-		// panic!("{:?}", expected_valid_public);
-		// let etf_id = bls377::Public::from(expected_valid_public);
+		let t = sp_core::bls::Pair::<TinyBLS377>::from(pair.clone());
+		let expected_public_key = t.acss_recover(&pok_bytes, 1).unwrap();
 		
-		// let mut res = store.acss_recover(BLS377, &pair.public(), &pok_bytes[..], msg, 1);
-		// assert!(bls377::Pair::verify(&res.unwrap(), &msg[..], &etf_id));
+		let res = store.acss_recover(BLS377, &pair.public(), &pok_bytes[..], msg, 1).unwrap();
+
+		assert!(bls377::Pair::verify(&res, &msg[..], &o.public()));
 	}
 
 	#[test]
