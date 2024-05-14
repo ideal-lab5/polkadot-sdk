@@ -2494,6 +2494,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "chacha20poly1305"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "10cd79432192d1c0f4e1a0fef9527696cc039165d729fb41b3f4f4f354c2dc35"
+dependencies = [
+ "aead 0.5.2",
+ "chacha20 0.9.1",
+ "cipher 0.4.4",
+ "poly1305 0.8.0",
+ "zeroize",
+]
+
+[[package]]
 name = "chrono"
 version = "0.4.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2573,6 +2586,7 @@ checksum = "773f3b9af64447d2ce9850330c473515014aa235e6a783b02db81ff39e4a3dad"
 dependencies = [
  "crypto-common",
  "inout",
+ "zeroize",
 ]
 
 [[package]]
@@ -5092,6 +5106,33 @@ checksum = "aa68f1b12764fab894d2755d2518754e71b4fd80ecfb822714a1206c2aab39bf"
 dependencies = [
  "cc",
  "libc",
+]
+
+[[package]]
+name = "etf-crypto-primitives"
+version = "0.2.4"
+source = "git+https://github.com/ideal-lab5/etf-sdk/?branch=w3fbls-migration#1f3f02525197f49515681887e570711e722a02cf"
+dependencies = [
+ "aes-gcm 0.10.3",
+ "ark-bls12-377",
+ "ark-bls12-381",
+ "ark-ec",
+ "ark-ff 0.4.2",
+ "ark-poly",
+ "ark-serialize 0.4.2",
+ "ark-std 0.4.0",
+ "array-bytes 6.1.0",
+ "chacha20poly1305 0.10.1",
+ "generic-array 0.14.7",
+ "parity-scale-codec",
+ "rand_chacha 0.3.1",
+ "scale-info",
+ "serde",
+ "serde_cbor",
+ "serde_json",
+ "sha2 0.10.7",
+ "sha3",
+ "w3f-bls",
 ]
 
 [[package]]
@@ -16248,6 +16289,7 @@ name = "sc-keystore"
 version = "25.0.0"
 dependencies = [
  "array-bytes 6.1.0",
+ "etf-crypto-primitives",
  "parking_lot 0.12.1",
  "serde_json",
  "sp-application-crypto",
@@ -17343,6 +17385,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_cbor"
+version = "0.11.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2bef2ebfde456fb76bbcf9f59315333decc4fda0b2b44b420243c11e0f5ec1f5"
+dependencies = [
+ "half",
+ "serde",
+]
+
+[[package]]
 name = "serde_derive"
 version = "1.0.197"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -17799,7 +17851,7 @@ checksum = "0c9d1425eb528a21de2755c75af4c9b5d57f50a0d4c3b7f1828a4cd03f8ba155"
 dependencies = [
  "aes-gcm 0.9.2",
  "blake2 0.10.6",
- "chacha20poly1305",
+ "chacha20poly1305 0.9.1",
  "curve25519-dalek 4.1.2",
  "rand_core 0.6.4",
  "ring 0.16.20",
@@ -18853,12 +18905,17 @@ dependencies = [
 name = "sp-keystore"
 version = "0.34.0"
 dependencies = [
+ "ark-ec",
+ "ark-serialize 0.4.2",
+ "ark-std 0.4.0",
+ "etf-crypto-primitives",
  "parity-scale-codec",
  "parking_lot 0.12.1",
  "rand",
  "rand_chacha 0.2.2",
  "sp-core",
  "sp-externalities 0.25.0",
+ "w3f-bls",
 ]
 
 [[package]]

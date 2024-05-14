@@ -24,6 +24,7 @@ thiserror = { workspace = true }
 sp-application-crypto = { path = "../../primitives/application-crypto" }
 sp-core = { path = "../../primitives/core" }
 sp-keystore = { path = "../../primitives/keystore" }
+etf-crypto-primitives = { git = "http://github.com/ideal-lab5/etf-sdk", branch = "w3fbls-migration" }
 
 [dev-dependencies]
 tempfile = "3.1.0"
@@ -44,3 +45,5 @@ bandersnatch-experimental = [
 	"sp-core/bandersnatch-experimental",
 	"sp-keystore/bandersnatch-experimental",
 ]
+
+etf = []
