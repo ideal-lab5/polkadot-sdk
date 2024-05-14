@@ -569,7 +569,7 @@ impl<T: Keystore + ?Sized> Keystore for Arc<T> {
 
 	fn ecdsa_sign_prehashed(
 		&self,
-	key_type: KeyTypeId,
+		key_type: KeyTypeId,
 		public: &ecdsa::Public,
 		msg: &[u8; 32],
 	) -> Result<Option<ecdsa::Signature>, Error> {
