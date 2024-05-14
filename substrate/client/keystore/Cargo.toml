@@ -22,6 +22,8 @@ parking_lot = { workspace = true, default-features = true }
 serde_json = { workspace = true, default-features = true }
 thiserror = { workspace = true }
 etf-crypto-primitives = { git = "http://github.com/ideal-lab5/etf-sdk", branch = "w3fbls-migration" }
+ark-serialize = "0.4.0"
+w3f-bls = "0.1.3"
 
 [dev-dependencies]
 tempfile = { workspace = true }

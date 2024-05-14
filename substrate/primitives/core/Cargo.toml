@@ -60,6 +60,9 @@ k256 = { features = ["alloc", "ecdsa"], workspace = true }
 # secp256k1 crate, better performance, intended to be used on host side (std)
 secp256k1 = { features = ["alloc", "recovery"], optional = true, workspace = true }
 
+# etf primitives
+etf-crypto-primitives = { git = "http://github.com/ideal-lab5/etf-sdk", branch = "w3fbls-migration", default-features = false}
+ark-serialize = "0.4.0"
 # bls crypto
 w3f-bls = { optional = true, workspace = true }
 # bandersnatch crypto
@@ -91,6 +94,7 @@ std = [
 	"codec/std",
 	"dyn-clonable",
 	"ed25519-zebra/std",
+	"etf-crypto-primitives/std",
 	"full_crypto",
 	"futures",
 	"futures/thread-pool",
