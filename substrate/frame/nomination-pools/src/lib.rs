@@ -461,19 +461,23 @@ pub enum ClaimPermission {
 	PermissionlessAll,
 }
 
+impl Default for ClaimPermission {
+	fn default() -> Self {
+		Self::PermissionlessWithdraw
+	}
+}
+
 impl ClaimPermission {
+	/// Permissionless compounding of pool rewards is allowed if the current permission is
+	/// `PermissionlessCompound`, or permissionless.
 	fn can_bond_extra(&self) -> bool {
 		matches!(self, ClaimPermission::PermissionlessAll | ClaimPermission::PermissionlessCompound)
 	}
 
+	/// Permissionless payout claiming is allowed if the current permission is
+	/// `PermissionlessWithdraw`, or permissionless.
 	fn can_claim_payout(&self) -> bool {
 		matches!(self, ClaimPermission::PermissionlessAll | ClaimPermission::PermissionlessWithdraw)
-	}
-}
-
-impl Default for ClaimPermission {
-	fn default() -> Self {
-		Self::Permissioned
 	}
 }
 
@@ -1653,6 +1657,9 @@ pub mod pallet {
 
 		/// The maximum length, in bytes, that a pools metadata maybe.
 		type MaxMetadataLen: Get<u32>;
+
+		/// The origin that can manage pool configurations.
+		type AdminOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 	}
 
 	/// The sum of funds across all pools.
@@ -2247,6 +2254,7 @@ pub mod pallet {
 				SubPoolsStorage::<T>::get(member.pool_id).ok_or(Error::<T>::SubPoolsNotFound)?;
 
 			bonded_pool.ok_to_withdraw_unbonded_with(&caller, &member_account)?;
+			let pool_account = bonded_pool.bonded_account();
 
 			// NOTE: must do this after we have done the `ok_to_withdraw_unbonded_other_with` check.
 			let withdrawn_points = member.withdraw_unlocked(current_era);
@@ -2255,7 +2263,7 @@ pub mod pallet {
 			// Before calculating the `balance_to_unbond`, we call withdraw unbonded to ensure the
 			// `transferrable_balance` is correct.
 			let stash_killed =
-				T::Staking::withdraw_unbonded(bonded_pool.bonded_account(), num_slashing_spans)?;
+				T::Staking::withdraw_unbonded(pool_account.clone(), num_slashing_spans)?;
 
 			// defensive-only: the depositor puts enough funds into the stash so that it will only
 			// be destroyed when they are leaving.
@@ -2263,6 +2271,20 @@ pub mod pallet {
 				!stash_killed || caller == bonded_pool.roles.depositor,
 				Error::<T>::Defensive(DefensiveError::BondedStashKilledPrematurely)
 			);
+
+			if stash_killed {
+				// Maybe an extra consumer left on the pool account, if so, remove it.
+				if frame_system::Pallet::<T>::consumers(&pool_account) == 1 {
+					frame_system::Pallet::<T>::dec_consumers(&pool_account);
+				}
+
+				// Note: This is not pretty, but we have to do this because of a bug where old pool
+				// accounts might have had an extra consumer increment. We know at this point no
+				// other pallet should depend on pool account so safe to do this.
+				// Refer to following issues:
+				// - https://github.com/paritytech/polkadot-sdk/issues/4440
+				// - https://github.com/paritytech/polkadot-sdk/issues/2037
+			}
 
 			let mut sum_unlocked_points: BalanceOf<T> = Zero::zero();
 			let balance_to_unbond = withdrawn_points
@@ -2491,7 +2513,7 @@ pub mod pallet {
 		}
 
 		/// Update configurations for the nomination pools. The origin for this call must be
-		/// Root.
+		/// [`Config::AdminOrigin`].
 		///
 		/// # Arguments
 		///
@@ -2512,7 +2534,7 @@ pub mod pallet {
 			max_members_per_pool: ConfigOp<u32>,
 			global_max_commission: ConfigOp<Perbill>,
 		) -> DispatchResult {
-			ensure_root(origin)?;
+			T::AdminOrigin::ensure_origin(origin)?;
 
 			macro_rules! config_op_exp {
 				($storage:ty, $op:ident) => {
@@ -2630,7 +2652,7 @@ pub mod pallet {
 		///
 		/// In the case of `origin != other`, `origin` can only bond extra pending rewards of
 		/// `other` members assuming set_claim_permission for the given member is
-		/// `PermissionlessAll` or `PermissionlessCompound`.
+		/// `PermissionlessCompound` or `PermissionlessAll`.
 		#[pallet::call_index(14)]
 		#[pallet::weight(
 			T::WeightInfo::bond_extra_transfer()
@@ -2648,15 +2670,10 @@ pub mod pallet {
 		/// Allows a pool member to set a claim permission to allow or disallow permissionless
 		/// bonding and withdrawing.
 		///
-		/// By default, this is `Permissioned`, which implies only the pool member themselves can
-		/// claim their pending rewards. If a pool member wishes so, they can set this to
-		/// `PermissionlessAll` to allow any account to claim their rewards and bond extra to the
-		/// pool.
-		///
 		/// # Arguments
 		///
 		/// * `origin` - Member of a pool.
-		/// * `actor` - Account to claim reward. // improve this
+		/// * `permission` - The permission to be applied.
 		#[pallet::call_index(15)]
 		#[pallet::weight(T::DbWeight::get().reads_writes(1, 1))]
 		pub fn set_claim_permission(
@@ -2666,16 +2683,18 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 
 			ensure!(PoolMembers::<T>::contains_key(&who), Error::<T>::PoolMemberNotFound);
+
 			ClaimPermissions::<T>::mutate(who, |source| {
 				*source = permission;
 			});
+
 			Ok(())
 		}
 
 		/// `origin` can claim payouts on some pool member `other`'s behalf.
 		///
-		/// Pool member `other` must have a `PermissionlessAll` or `PermissionlessWithdraw` in order
-		/// for this call to be successful.
+		/// Pool member `other` must have a `PermissionlessWithdraw` or `PermissionlessAll` claim
+		/// permission for this call to be successful.
 		#[pallet::call_index(16)]
 		#[pallet::weight(T::WeightInfo::claim_payout())]
 		pub fn claim_payout_other(origin: OriginFor<T>, other: T::AccountId) -> DispatchResult {

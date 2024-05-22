@@ -19,7 +19,11 @@ use super::*;
 use crate::{mock::*, Event};
 use frame_support::{assert_err, assert_noop, assert_ok, assert_storage_noop};
 use pallet_balances::Event as BEvent;
-use sp_runtime::{bounded_btree_map, traits::Dispatchable, FixedU128};
+use sp_runtime::{
+	bounded_btree_map,
+	traits::{BadOrigin, Dispatchable},
+	FixedU128,
+};
 
 macro_rules! unbonding_pools_with_era {
 	($($k:expr => $v:expr),* $(,)?) => {{
@@ -2441,16 +2445,10 @@ mod claim_payout {
 			// given
 			assert_eq!(Currency::free_balance(&10), 35);
 
-			// Permissioned by default
-			assert_noop!(
-				Pools::claim_payout_other(RuntimeOrigin::signed(80), 10),
-				Error::<Runtime>::DoesNotHavePermission
-			);
+			// when
 
-			assert_ok!(Pools::set_claim_permission(
-				RuntimeOrigin::signed(10),
-				ClaimPermission::PermissionlessWithdraw
-			));
+			// NOTE: Claim permission of `PermissionlessWithdraw` allows payout claiming as default,
+			// so a claim permission does not need to be set for non-pool members prior to claiming.
 			assert_ok!(Pools::claim_payout_other(RuntimeOrigin::signed(80), 10));
 
 			// then
@@ -2489,7 +2487,6 @@ mod unbond {
 				);
 
 				// Make permissionless
-				assert_eq!(ClaimPermissions::<Runtime>::get(10), ClaimPermission::Permissioned);
 				assert_ok!(Pools::set_claim_permission(
 					RuntimeOrigin::signed(20),
 					ClaimPermission::PermissionlessAll
@@ -4563,12 +4560,11 @@ mod withdraw_unbonded {
 			CurrentEra::set(1);
 			assert_eq!(PoolMembers::<Runtime>::get(20).unwrap().points, 20);
 
-			assert_ok!(Pools::set_claim_permission(
-				RuntimeOrigin::signed(20),
-				ClaimPermission::PermissionlessAll
-			));
 			assert_ok!(Pools::unbond(RuntimeOrigin::signed(20), 20, 20));
-			assert_eq!(ClaimPermissions::<Runtime>::get(20), ClaimPermission::PermissionlessAll);
+			assert_eq!(
+				ClaimPermissions::<Runtime>::get(20),
+				ClaimPermission::PermissionlessWithdraw
+			);
 
 			assert_eq!(
 				pool_events_since_last_call(),
@@ -4597,6 +4593,92 @@ mod withdraw_unbonded {
 			assert_eq!(PoolMembers::<Runtime>::get(20), None);
 			assert_eq!(ClaimPermissions::<Runtime>::contains_key(20), false);
 		});
+	}
+
+	#[test]
+	fn destroy_works_without_erroneous_extra_consumer() {
+		ExtBuilder::default().ed(1).build_and_execute(|| {
+			// 10 is the depositor for pool 1, with min join bond 10.
+			// set pool to destroying.
+			unsafe_set_state(1, PoolState::Destroying);
+
+			// set current era
+			CurrentEra::set(1);
+			assert_ok!(Pools::unbond(RuntimeOrigin::signed(10), 10, 10));
+
+			assert_eq!(
+				pool_events_since_last_call(),
+				vec![
+					Event::Created { depositor: 10, pool_id: 1 },
+					Event::Bonded { member: 10, pool_id: 1, bonded: 10, joined: true },
+					Event::Unbonded { member: 10, pool_id: 1, balance: 10, points: 10, era: 4 },
+				]
+			);
+
+			// move to era when unbonded funds can be withdrawn.
+			CurrentEra::set(4);
+			assert_ok!(Pools::withdraw_unbonded(RuntimeOrigin::signed(10), 10, 0));
+
+			assert_eq!(
+				pool_events_since_last_call(),
+				vec![
+					Event::Withdrawn { member: 10, pool_id: 1, points: 10, balance: 10 },
+					Event::MemberRemoved { pool_id: 1, member: 10 },
+					Event::Destroyed { pool_id: 1 },
+				]
+			);
+
+			// pool is destroyed.
+			assert!(!Metadata::<T>::contains_key(1));
+			// ensure the pool account is reaped.
+			assert!(!frame_system::Account::<T>::contains_key(&Pools::create_bonded_account(1)));
+		})
+	}
+
+	#[test]
+	fn destroy_works_with_erroneous_extra_consumer() {
+		ExtBuilder::default().ed(1).build_and_execute(|| {
+			// 10 is the depositor for pool 1, with min join bond 10.
+			let pool_one = Pools::create_bonded_account(1);
+
+			// set pool to destroying.
+			unsafe_set_state(1, PoolState::Destroying);
+
+			// set current era
+			CurrentEra::set(1);
+			assert_ok!(Pools::unbond(RuntimeOrigin::signed(10), 10, 10));
+
+			assert_eq!(
+				pool_events_since_last_call(),
+				vec![
+					Event::Created { depositor: 10, pool_id: 1 },
+					Event::Bonded { member: 10, pool_id: 1, bonded: 10, joined: true },
+					Event::Unbonded { member: 10, pool_id: 1, balance: 10, points: 10, era: 4 },
+				]
+			);
+
+			// move to era when unbonded funds can be withdrawn.
+			CurrentEra::set(4);
+
+			// increment consumer by 1 reproducing the erroneous consumer bug.
+			// refer https://github.com/paritytech/polkadot-sdk/issues/4440.
+			assert_ok!(frame_system::Pallet::<T>::inc_consumers(&pool_one));
+			assert_ok!(Pools::withdraw_unbonded(RuntimeOrigin::signed(10), 10, 0));
+
+			assert_eq!(
+				pool_events_since_last_call(),
+				vec![
+					Event::Withdrawn { member: 10, pool_id: 1, points: 10, balance: 10 },
+					Event::MemberRemoved { pool_id: 1, member: 10 },
+					Event::Destroyed { pool_id: 1 },
+				]
+			);
+
+			// pool is destroyed.
+			assert!(!Metadata::<T>::contains_key(1));
+			// ensure the pool account is reaped.
+			assert!(!frame_system::Account::<T>::contains_key(&pool_one));
+		})
 	}
 }
 
@@ -4792,7 +4874,7 @@ mod create {
 }
 
 #[test]
-fn set_claimable_actor_works() {
+fn set_claim_permission_works() {
 	ExtBuilder::default().build_and_execute(|| {
 		// Given
 		Currency::set_balance(&11, ExistentialDeposit::get() + 2);
@@ -4811,22 +4893,19 @@ fn set_claimable_actor_works() {
 			]
 		);
 
-		// Make permissionless
-		assert_eq!(ClaimPermissions::<Runtime>::get(11), ClaimPermission::Permissioned);
+		// Make permissioned
+		assert_eq!(ClaimPermissions::<Runtime>::get(11), ClaimPermission::PermissionlessWithdraw);
 		assert_noop!(
-			Pools::set_claim_permission(
-				RuntimeOrigin::signed(12),
-				ClaimPermission::PermissionlessAll
-			),
+			Pools::set_claim_permission(RuntimeOrigin::signed(12), ClaimPermission::Permissioned),
 			Error::<T>::PoolMemberNotFound
 		);
 		assert_ok!(Pools::set_claim_permission(
 			RuntimeOrigin::signed(11),
-			ClaimPermission::PermissionlessAll
+			ClaimPermission::Permissioned
 		));
 
 		// then
-		assert_eq!(ClaimPermissions::<Runtime>::get(11), ClaimPermission::PermissionlessAll);
+		assert_eq!(ClaimPermissions::<Runtime>::get(11), ClaimPermission::Permissioned);
 	});
 }
 
@@ -5007,9 +5086,23 @@ mod set_configs {
 	#[test]
 	fn set_configs_works() {
 		ExtBuilder::default().build_and_execute(|| {
-			// Setting works
+			// only admin origin can set configs
+			assert_noop!(
+				Pools::set_configs(
+					RuntimeOrigin::signed(20),
+					ConfigOp::Set(1 as Balance),
+					ConfigOp::Set(2 as Balance),
+					ConfigOp::Set(3u32),
+					ConfigOp::Set(4u32),
+					ConfigOp::Set(5u32),
+					ConfigOp::Set(Perbill::from_percent(6))
+				),
+				BadOrigin
+			);
+
+			// Setting works by Admin (42)
 			assert_ok!(Pools::set_configs(
-				RuntimeOrigin::root(),
+				RuntimeOrigin::signed(42),
 				ConfigOp::Set(1 as Balance),
 				ConfigOp::Set(2 as Balance),
 				ConfigOp::Set(3u32),
@@ -5026,7 +5119,7 @@ mod set_configs {
 
 			// Noop does nothing
 			assert_storage_noop!(assert_ok!(Pools::set_configs(
-				RuntimeOrigin::root(),
+				RuntimeOrigin::signed(42),
 				ConfigOp::Noop,
 				ConfigOp::Noop,
 				ConfigOp::Noop,
@@ -5037,7 +5130,7 @@ mod set_configs {
 
 			// Removing works
 			assert_ok!(Pools::set_configs(
-				RuntimeOrigin::root(),
+				RuntimeOrigin::signed(42),
 				ConfigOp::Remove,
 				ConfigOp::Remove,
 				ConfigOp::Remove,
@@ -5224,7 +5317,7 @@ mod bond_extra {
 
 			assert_ok!(Pools::set_claim_permission(
 				RuntimeOrigin::signed(10),
-				ClaimPermission::PermissionlessAll
+				ClaimPermission::PermissionlessCompound
 			));
 			assert_ok!(Pools::bond_extra_other(RuntimeOrigin::signed(50), 10, BondExtra::Rewards));
 			assert_eq!(Currency::free_balance(&default_reward_account()), 7);

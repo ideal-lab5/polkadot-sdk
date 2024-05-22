@@ -17,8 +17,11 @@
 
 use super::*;
 use crate::{self as pools};
-use frame_support::{assert_ok, derive_impl, parameter_types, traits::fungible::Mutate, PalletId};
-use frame_system::RawOrigin;
+use frame_support::{
+	assert_ok, derive_impl, ord_parameter_types, parameter_types, traits::fungible::Mutate,
+	PalletId,
+};
+use frame_system::{EnsureSignedBy, RawOrigin};
 use sp_runtime::{BuildStorage, FixedU128};
 use sp_staking::{OnStakingUpdate, Stake};
 
@@ -128,6 +131,10 @@ impl sp_staking::StakingInterface for StakingMock {
 		Ok(())
 	}
 
+	fn update_payee(_stash: &Self::AccountId, _reward_acc: &Self::AccountId) -> DispatchResult {
+		unimplemented!("method currently not used in testing")
+	}
+
 	fn chill(_: &Self::AccountId) -> sp_runtime::DispatchResult {
 		Ok(())
 	}
@@ -153,7 +160,8 @@ impl sp_staking::StakingInterface for StakingMock {
 		Pools::on_withdraw(&who, unlocking_before.saturating_sub(unlocking(&staker_map)));
 
 		UnbondingBalanceMap::set(&unbonding_map);
-		Ok(UnbondingBalanceMap::get().is_empty() && BondedBalanceMap::get().is_empty())
+		Ok(UnbondingBalanceMap::get().get(&who).unwrap().is_empty() &&
+			BondedBalanceMap::get().get(&who).unwrap().is_zero())
 	}
 
 	fn bond(stash: &Self::AccountId, value: Self::Balance, _: &Self::AccountId) -> DispatchResult {
@@ -218,6 +226,10 @@ impl sp_staking::StakingInterface for StakingMock {
 
 	#[cfg(feature = "runtime-benchmarks")]
 	fn max_exposure_page_size() -> sp_staking::Page {
+		unimplemented!("method currently not used in testing")
+	}
+
+	fn slash_reward_fraction() -> Perbill {
 		unimplemented!("method currently not used in testing")
 	}
 }
@@ -289,6 +301,11 @@ parameter_types! {
 	pub static CheckLevel: u8 = 255;
 	pub const PoolsPalletId: PalletId = PalletId(*b"py/nopls");
 }
+
+ord_parameter_types! {
+	pub const Admin: u128 = 42;
+}
+
 impl pools::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
@@ -303,6 +320,7 @@ impl pools::Config for Runtime {
 	type MaxMetadataLen = MaxMetadataLen;
 	type MaxUnbonding = MaxUnbonding;
 	type MaxPointsToBalance = frame_support::traits::ConstU8<10>;
+	type AdminOrigin = EnsureSignedBy<Admin, AccountId>;
 }
 
 type Block = frame_system::mocking::MockBlock<Runtime>;
