@@ -432,11 +432,11 @@ impl Keystore for LocalKeystore {
 			log::debug!("[acss_recover] key_type: {:?}, public: {:?}, pok_bytes: {:?}, \n
 			message: {:?}, threshold: {:?}", key_type, public, pok_bytes, message, threshold);
 			let key_pair = self.0.read()
-			.key_pair_by_type::<bls377::Pair>(public, key_type);
-			log::debug!("[acss_recover] key_pair: {:?}", key_pair);
-			if let Some(Some(etf_pair)) = key_pair?
+			.key_pair_by_type::<bls377::Pair>(public, key_type)?;
+			log::debug!("[acss_recover] key_pair ready");
+			if let Some(Some(etf_pair)) = key_pair
 				.map(|pair| pair.acss_recover(pok_bytes, threshold)) {
-					log::debug!("[acss_recover] etf_pair: {:?}, pair: {:?}", etf_pair, pair);
+					log::debug!("[acss_recover] etf_pair ready");
 				let extract = etf_pair.sign(&message);
 				return Ok(extract);
 			}
