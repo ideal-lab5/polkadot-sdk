@@ -17530,6 +17530,7 @@ dependencies = [
  "ark-serialize 0.4.2",
  "array-bytes",
  "etf-crypto-primitives",
+ "log",
  "parking_lot 0.12.3",
  "serde_json",
  "sp-application-crypto",
