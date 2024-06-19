@@ -5301,7 +5301,7 @@ dependencies = [
 [[package]]
 name = "etf-crypto-primitives"
 version = "0.2.4"
-source = "git+https://github.com/ideal-lab5/etf-sdk?branch=w3fbls-migration#c6e61a89b94b57bcbde2293208a2875469f4fc5c"
+source = "git+https://github.com/ideal-lab5/etf-sdk?branch=jg/debug#41936cb490738b536d66cbf82b9713f6f87d434a"
 dependencies = [
  "aes-gcm",
  "ark-bls12-377",
@@ -5314,6 +5314,7 @@ dependencies = [
  "array-bytes",
  "chacha20poly1305",
  "generic-array 0.14.7",
+ "log",
  "parity-scale-codec",
  "rand_chacha 0.3.1",
  "scale-info",
@@ -5328,7 +5329,7 @@ dependencies = [
 [[package]]
 name = "etf-crypto-primitives"
 version = "0.2.4"
-source = "git+https://github.com/ideal-lab5/etf-sdk#1bdfddc0c8b01cab2d0bc95b30768215f3be4d25"
+source = "git+https://github.com/ideal-lab5/etf-sdk?branch=w3fbls-migration#c6e61a89b94b57bcbde2293208a2875469f4fc5c"
 dependencies = [
  "aes-gcm",
  "ark-bls12-377",
@@ -20017,7 +20018,7 @@ dependencies = [
  "criterion",
  "dyn-clonable",
  "ed25519-zebra",
- "etf-crypto-primitives 0.2.4 (git+https://github.com/ideal-lab5/etf-sdk)",
+ "etf-crypto-primitives 0.2.4 (git+https://github.com/ideal-lab5/etf-sdk?branch=jg/debug)",
  "futures",
  "hash-db",
  "hash256-std-hasher",
@@ -20253,7 +20254,7 @@ dependencies = [
  "ark-ec",
  "ark-serialize 0.4.2",
  "ark-std 0.4.0",
- "etf-crypto-primitives 0.2.4 (git+https://github.com/ideal-lab5/etf-sdk)",
+ "etf-crypto-primitives 0.2.4 (git+https://github.com/ideal-lab5/etf-sdk?branch=jg/debug)",
  "parity-scale-codec",
  "parking_lot 0.12.3",
  "rand 0.8.5",
