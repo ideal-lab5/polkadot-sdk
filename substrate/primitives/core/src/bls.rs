@@ -35,10 +35,7 @@ use w3f_bls::{
 	SecretKey, SerializableToBytes, TinyBLS381,
 };
 
-use etf_crypto_primitives::{
-	dpss::Keypair as ETFKeypair,
-	proofs::hashed_el_gamal_sigma::BatchPoK
-};
+use etf_crypto_primitives::{dpss::Keypair as ETFKeypair, proofs::hashed_el_gamal_sigma::BatchPoK};
 
 use ark_serialize::CanonicalDeserialize;
 
@@ -150,16 +147,31 @@ impl<T: EngineBLS> Pair<T> {
 	/// the ACSS Recover algorithm
 	/// attempt to recover a keypair from the proof of knowledge
 	pub fn acss_recover(&self, pok_bytes: &[u8], threshold: u8) -> Option<Self> {
+		log::debug!(
+			"[acss_recover] Attempting to recover keypair from PoK with threshold: {}",
+			threshold
+		);
 		let mutable_self = self.clone();
-		if let Ok(pok) = BatchPoK::<T::PublicKeyGroup>::deserialize_compressed(&pok_bytes[..]) {
-			let sk = ETFKeypair(mutable_self.0.into_vartime());
-			if let Ok(recovered) = sk.recover(pok, threshold) {
-				let secret = w3f_bls::SecretKeyVT(recovered.0).into_split_dirty();
-				let public = secret.into_public();
-				return Some(Pair(w3f_bls::Keypair {
-					secret, public,
-				}));
-			}
+		match BatchPoK::<T::PublicKeyGroup>::deserialize_compressed(&pok_bytes[..]) {
+			Ok(pok) => {
+				log::debug!("Deserialized pok successfully");
+				let sk = ETFKeypair(mutable_self.0.into_vartime());
+				match sk.recover(pok, threshold) {
+					Ok(recovered) => {
+						log::debug!("Recovered sk successfully");
+						let secret = w3f_bls::SecretKeyVT(recovered.0).into_split_dirty();
+						let public = secret.into_public();
+						log::debug!("Created secret and public keys");
+						return Some(Pair(w3f_bls::Keypair { secret, public }));
+					},
+					Err(e) => {
+						log::debug!("[acss_recover] Error recovering keypair: {:?}", e);
+					},
+				}
+			},
+			Err(e) => {
+				log::debug!("[acss_recover] Error deserializing PoK: {:?}", e);
+			},
 		}
 		None
 	}
@@ -172,7 +184,7 @@ impl<T: BlsBound> TraitPair for Pair<T> {
 
 	fn from_seed_slice(seed_slice: &[u8]) -> Result<Self, SecretStringError> {
 		if seed_slice.len() != SECRET_KEY_SERIALIZED_SIZE {
-			return Err(SecretStringError::InvalidSeedLength)
+			return Err(SecretStringError::InvalidSeedLength);
 		}
 		let secret = w3f_bls::SecretKey::from_seed(seed_slice);
 		let public = secret.into_public();
