@@ -5287,7 +5287,7 @@ dependencies = [
 [[package]]
 name = "etf-crypto-primitives"
 version = "0.2.4"
-source = "git+https://github.com/ideal-lab5/etf-sdk#1bdfddc0c8b01cab2d0bc95b30768215f3be4d25"
+source = "git+https://github.com/ideal-lab5/etf-sdk?branch=jg/debug#41936cb490738b536d66cbf82b9713f6f87d434a"
 dependencies = [
  "aes-gcm",
  "ark-bls12-377",
@@ -5300,6 +5300,7 @@ dependencies = [
  "array-bytes",
  "chacha20poly1305",
  "generic-array 0.14.7",
+ "log",
  "parity-scale-codec",
  "rand_chacha 0.3.1",
  "scale-info",

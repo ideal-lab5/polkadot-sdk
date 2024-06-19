@@ -25,7 +25,7 @@ thiserror = { workspace = true }
 sp-application-crypto = { path = "../../primitives/application-crypto" }
 sp-core = { path = "../../primitives/core" }
 sp-keystore = { path = "../../primitives/keystore" }
-etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk" }
+etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk", branch = "jg/debug" }
 # etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk", branch = "w3fbls-migration" }
 ark-serialize = "0.4.0"
 w3f-bls = "0.1.3"
