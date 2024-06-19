@@ -5287,7 +5287,7 @@ dependencies = [
 [[package]]
 name = "etf-crypto-primitives"
 version = "0.2.4"
-source = "git+http://github.com/ideal-lab5/etf-sdk?branch=w3fbls-migration#c6e61a89b94b57bcbde2293208a2875469f4fc5c"
+source = "git+https://github.com/ideal-lab5/etf-sdk#1bdfddc0c8b01cab2d0bc95b30768215f3be4d25"
 dependencies = [
  "aes-gcm",
  "ark-bls12-377",
