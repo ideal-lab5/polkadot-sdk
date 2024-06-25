@@ -441,7 +441,7 @@ impl Keystore for LocalKeystore {
 				return Ok(extract);
 			}
 
-			Err(TraitError::KeyNotSupported(ETF_KEY_TYPE))
+			Err(TraitError::Other("ACSS failed to recover keypair".to_string()))
 		}
 	}
 }
