@@ -395,7 +395,7 @@ pub trait Keystore: Send + Sync {
 		pok_bytes: &[u8],
 		message: &[u8],
 		threshold: u8,
-	) -> Result<bls377::Signature, Error>;
+	) -> Result<(bls377::Public, bls377::Signature), Error>;
 
 	/// Insert a new secret key.
 	fn insert(&self, key_type: KeyTypeId, suri: &str, public: &[u8]) -> Result<(), ()>;
@@ -721,7 +721,7 @@ impl<T: Keystore + ?Sized> Keystore for Arc<T> {
 		pok_bytes: &[u8],
 		message: &[u8],
 		threshold: u8,
-	) -> Result<bls377::Signature, Error> {
+	) -> Result<(bls377::Public, bls377::Signature), Error> {
 		(**self).acss_recover(key_type, public, pok_bytes, message, threshold)
 	}
 
