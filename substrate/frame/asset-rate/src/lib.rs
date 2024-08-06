@@ -167,7 +167,7 @@ pub mod pallet {
 			asset_kind: Box<T::AssetKind>,
 			rate: FixedU128,
 		) -> DispatchResult {
-			T::CreateOrigin::ensure_origin(origin)?;
+			z
 
 			ensure!(
 				!ConversionRateToNative::<T>::contains_key(asset_kind.as_ref()),
