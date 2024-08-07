@@ -357,49 +357,34 @@ impl Keystore for LocalKeystore {
 			self.sign::<bls381::Pair>(key_type, public, msg)
 		}
 
-		fn bls377_public_keys(&self, key_type: KeyTypeId) -> Vec<bls377::Public> {
-			self.public_keys::<bls377::Pair>(key_type)
+		fn ecdsa_bls381_public_keys(&self, key_type: KeyTypeId) -> Vec<ecdsa_bls381::Public> {
+			self.public_keys::<ecdsa_bls381::Pair>(key_type)
 		}
 
-		/// Generate a new pair compatible with the 'bls377' signature scheme.
+		/// Generate a new pair of paired-keys compatible with the '(ecdsa,bls381)' signature scheme.
 		///
 		/// If `[seed]` is `Some` then the key will be ephemeral and stored in memory.
-		fn bls377_generate_new(
+		fn ecdsa_bls381_generate_new(
 			&self,
 			key_type: KeyTypeId,
 			seed: Option<&str>,
-		) -> std::result::Result<bls377::Public, TraitError> {
-			self.generate_new::<bls377::Pair>(key_type, seed)
+		) -> std::result::Result<ecdsa_bls381::Public, TraitError> {
+			self.generate_new::<ecdsa_bls381::Pair>(key_type, seed)
 		}
 
-		fn bls377_sign(
+		fn ecdsa_bls381_sign(
 			&self,
 			key_type: KeyTypeId,
-			public: &bls377::Public,
+			public: &ecdsa_bls381::Public,
 			msg: &[u8],
-		) -> std::result::Result<Option<bls377::Signature>, TraitError> {
-			self.sign::<bls377::Pair>(key_type, public, msg)
+		) -> std::result::Result<Option<ecdsa_bls381::Signature>, TraitError> {
+			self.sign::<ecdsa_bls381::Pair>(key_type, public, msg)
 		}
 
-		fn ecdsa_bls377_public_keys(&self, key_type: KeyTypeId) -> Vec<ecdsa_bls377::Public> {
-			self.public_keys::<ecdsa_bls377::Pair>(key_type)
-		}
-
-		/// Generate a new pair of paired-keys compatible with the '(ecdsa,bls377)' signature scheme.
-		///
-		/// If `[seed]` is `Some` then the key will be ephemeral and stored in memory.
-		fn ecdsa_bls377_generate_new(
+		fn ecdsa_bls381_sign_with_keccak256(
 			&self,
 			key_type: KeyTypeId,
-			seed: Option<&str>,
-		) -> std::result::Result<ecdsa_bls377::Public, TraitError> {
-			self.generate_new::<ecdsa_bls377::Pair>(key_type, seed)
-		}
-
-		fn ecdsa_bls377_sign(
-			&self,
-			key_type: KeyTypeId,
-			public: &ecdsa_bls377::Public,
+			public: &ecdsa_bls381::Public,
 			msg: &[u8],
 		) -> std::result::Result<Option<ecdsa_bls377::Signature>, TraitError> {
 			self.sign::<ecdsa_bls377::Pair>(key_type, public, msg)
