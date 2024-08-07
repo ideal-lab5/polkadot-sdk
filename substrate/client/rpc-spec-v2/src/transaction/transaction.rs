@@ -30,7 +30,7 @@ use crate::{
 use codec::Decode;
 use futures::{StreamExt, TryFutureExt};
 use jsonrpsee::{core::async_trait, PendingSubscriptionSink};
-use sc_rpc::utils::{RingBuffer, Subscription};
+use sc_rpc::utils::{pipe_from_stream, to_sub_message};
 use sc_transaction_pool_api::{
 	error::IntoPoolError, BlockHash, TransactionFor, TransactionPool, TransactionSource,
 	TransactionStatus,
@@ -84,14 +84,16 @@ where
 				Err(e) => {
 					log::debug!(target: LOG_TARGET, "Extrinsic bytes cannot be decoded: {:?}", e);
 
-					let Ok(sink) = pending.accept().await.map(Subscription::from) else { return };
+					let Ok(sink) = pending.accept().await else { return };
 
 					// The transaction is invalid.
-					let _ = sink
-						.send(&TransactionEvent::Invalid::<BlockHash<Pool>>(TransactionError {
+					let msg = to_sub_message(
+						&sink,
+						&TransactionEvent::Invalid::<BlockHash<Pool>>(TransactionError {
 							error: "Extrinsic bytes cannot be decoded".into(),
-						}))
-						.await;
+						}),
+					);
+					let _ = sink.send(msg).await;
 					return
 				},
 			};
@@ -106,23 +108,16 @@ where
 						.unwrap_or_else(|e| Error::Verification(Box::new(e)))
 				});
 
-			let Ok(sink) = pending.accept().await.map(Subscription::from) else {
-				return;
-			};
-
 			match submit.await {
 				Ok(stream) => {
-					let stream =
-						stream.filter_map(move |event| async move { handle_event(event) }).boxed();
-
-					// If the subscription is too slow older events will be overwritten.
-					sink.pipe_from_stream(stream, RingBuffer::new(3)).await;
+					let stream = stream.filter_map(move |event| async move { handle_event(event) });
+					pipe_from_stream(pending, stream.boxed()).await;
 				},
 				Err(err) => {
 					// We have not created an `Watcher` for the tx. Make sure the
 					// error is still propagated as an event.
 					let event: TransactionEvent<<Pool::Block as BlockT>::Hash> = err.into();
-					_ = sink.send(&event).await;
+					pipe_from_stream(pending, futures::stream::once(async { event }).boxed()).await;
 				},
 			};
 		};

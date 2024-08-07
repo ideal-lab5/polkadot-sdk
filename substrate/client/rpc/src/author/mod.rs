@@ -24,7 +24,7 @@ mod tests;
 use std::sync::Arc;
 
 use crate::{
-	utils::{spawn_subscription_task, BoundedVecDeque, PendingSubscription},
+	utils::{pipe_from_stream, spawn_subscription_task},
 	SubscriptionTaskExecutor,
 };
 
@@ -202,9 +202,7 @@ where
 				},
 			};
 
-			PendingSubscription::from(pending)
-				.pipe_from_stream(stream, BoundedVecDeque::default())
-				.await;
+			pipe_from_stream(pending, stream).await;
 		};
 
 		spawn_subscription_task(&self.executor, fut);
