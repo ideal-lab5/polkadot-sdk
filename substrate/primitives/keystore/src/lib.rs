@@ -27,7 +27,7 @@ pub mod testing;
 #[cfg(feature = "bandersnatch-experimental")]
 use sp_core::bandersnatch;
 #[cfg(feature = "bls-experimental")]
-use sp_core::{bls377, bls381, ecdsa_bls381};
+use sp_core::{bls381, ecdsa_bls381};
 use sp_core::{
 	crypto::{ByteArray, CryptoTypeId, KeyTypeId},
 	ecdsa, ed25519, sr25519,
@@ -360,11 +360,11 @@ pub trait Keystore: Send + Sync {
 	fn acss_recover(
 		&self, 
 		key_type: KeyTypeId,
-		public: &bls377::Public,
+		public: &bls381::Public,
 		pok_bytes: &[u8],
 		message: &[u8],
 		threshold: u8,
-	) -> Result<bls377::Signature, Error>;
+	) -> Result<bls381::Signature, Error>;
 
 	/// Insert a new secret key.
 	fn insert(&self, key_type: KeyTypeId, suri: &str, public: &[u8]) -> Result<(), ()>;
@@ -654,11 +654,11 @@ impl<T: Keystore + ?Sized> Keystore for Arc<T> {
 	fn acss_recover(
 		&self, 
 		key_type: KeyTypeId,
-		public: &bls377::Public,
+		public: &bls381::Public,
 		pok_bytes: &[u8],
 		message: &[u8],
 		threshold: u8,
-	) -> Result<bls377::Signature, Error> {
+	) -> Result<bls381::Signature, Error> {
 		(**self).acss_recover(key_type, public, pok_bytes, message, threshold)
 	}
 

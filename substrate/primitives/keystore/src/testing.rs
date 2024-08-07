@@ -22,7 +22,7 @@ use crate::{Error, Keystore, KeystorePtr};
 #[cfg(feature = "bandersnatch-experimental")]
 use sp_core::bandersnatch;
 #[cfg(feature = "bls-experimental")]
-use sp_core::{bls377, bls381, ecdsa_bls381, KeccakHasher};
+use sp_core::{bls381, ecdsa_bls381, KeccakHasher};
 use sp_core::{
 	crypto::{ByteArray, KeyTypeId, Pair, VrfSecret},
 	ecdsa, ed25519, sr25519,
@@ -339,12 +339,12 @@ impl Keystore for MemoryKeystore {
 	fn acss_recover(
 		&self,
 		key_type: KeyTypeId,
-		public: &bls377::Public,
+		public: &bls381::Public,
 		pok: &[u8],
 		msg: &[u8],
 		threshold: u8
-	) -> Result<bls377::Signature, Error> {
-		let sig = self.pair::<bls377::Pair>(key_type, public)
+	) -> Result<bls381::Signature, Error> {
+		let sig = self.pair::<bls381::Pair>(key_type, public)
 			.map(|pair| pair.acss_recover(pok, threshold))
 			.unwrap().unwrap();
 		let extract = sig.sign(&msg);
@@ -395,7 +395,7 @@ mod tests {
 	use ark_std::UniformRand;
 	use ark_ec::Group;
 	use rand::rngs::OsRng;
-	use w3f_bls::{EngineBLS, TinyBLS377, SerializableToBytes};
+	use w3f_bls::{EngineBLS, TinyBLS381, SerializableToBytes};
 
 	#[test]
 	fn store_key_and_extract() {
@@ -538,7 +538,7 @@ mod tests {
 
 	#[test]
 	#[cfg(feature = "bls-experimental")]
-	fn bls377_acss_recover_works() {
+	fn bls381_acss_recover_works() {
 		use sp_core::testing::BLS377;
 
 		let store = MemoryKeystore::new();
@@ -549,20 +549,20 @@ mod tests {
 		// insert key, sign again
 		store.insert(BLS377, suri, pair.public().as_ref()).unwrap();
 
-		let msk = <TinyBLS377 as EngineBLS>::Scalar::rand(&mut OsRng);
-		let msk_prime = <TinyBLS377 as EngineBLS>::Scalar::rand(&mut OsRng);
+		let msk = <TinyBLS381 as EngineBLS>::Scalar::rand(&mut OsRng);
+		let msk_prime = <TinyBLS381 as EngineBLS>::Scalar::rand(&mut OsRng);
 		// build a resharing 
-		let double_secret = etf_crypto_primitives::dpss::DoubleSecret::<TinyBLS377>(
+		let double_secret = etf_crypto_primitives::dpss::DoubleSecret::<TinyBLS381>(
 			msk, msk_prime
 		);
 
-		let ibe_pub_param = <TinyBLS377 as EngineBLS>::PublicKeyGroup::generator() * msk;
+		let ibe_pub_param = <TinyBLS381 as EngineBLS>::PublicKeyGroup::generator() * msk;
 		let mut ibe_pp_bytes = Vec::new();
 		ibe_pub_param.serialize_compressed(&mut ibe_pp_bytes).unwrap();
 
 		let genesis_resharing = double_secret.reshare(
-			&vec![w3f_bls::single::PublicKey::<TinyBLS377>(
-				w3f_bls::double::DoublePublicKey::<TinyBLS377>::from_bytes(
+			&vec![w3f_bls::single::PublicKey::<TinyBLS381>(
+				w3f_bls::double::DoublePublicKey::<TinyBLS381>::from_bytes(
 					&pair.public().to_raw_vec()
 				).unwrap().1
 			)],
@@ -573,7 +573,7 @@ mod tests {
 		let mut pok_bytes = Vec::new();
 		genesis_resharing[0].1.serialize_compressed(&mut pok_bytes).unwrap();
 
-		let t = sp_core::bls::Pair::<TinyBLS377>::from(pair.clone());
+		let t = sp_core::bls::Pair::<TinyBLS381>::from(pair.clone());
 		let expected_public_key = t.acss_recover(&pok_bytes, 1).unwrap();
 		
 		let res = store.acss_recover(BLS377, &pair.public(), &pok_bytes[..], msg, 1).unwrap();
