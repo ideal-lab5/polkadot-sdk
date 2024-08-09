@@ -25,6 +25,7 @@ etf-crypto-primitives = { git = "http://github.com/ideal-lab5/etf-sdk", branch =
 ark-serialize = "0.4.0"
 w3f-bls = "0.1.3"
 sp-core = { workspace = true, default-features = true }
+sp-keystore = { workspace = true, default-features = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
