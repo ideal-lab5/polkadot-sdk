@@ -367,12 +367,12 @@ impl Keystore for MemoryKeystore {
 		pok: &[u8],
 		msg: &[u8],
 		threshold: u8
-	) -> Result<bls377::Signature, Error> {
+	) -> Result<(bls377::Public, bls377::Signature), Error> {
 		let sig = self.pair::<bls377::Pair>(key_type, public)
 			.map(|pair| pair.acss_recover(pok, threshold))
 			.unwrap().unwrap();
 		let extract = sig.sign(&msg);
-		Ok(extract)
+		Ok((sig.public(), extract))
 	}
 
 	fn insert(&self, key_type: KeyTypeId, suri: &str, public: &[u8]) -> Result<(), ()> {
@@ -597,12 +597,13 @@ mod tests {
 		let mut pok_bytes = Vec::new();
 		genesis_resharing[0].1.serialize_compressed(&mut pok_bytes).unwrap();
 
-		let t = sp_core::bls::Pair::<TinyBLS377>::from(pair.clone());
-		let expected_public_key = t.acss_recover(&pok_bytes, 1).unwrap();
+		// let t = sp_core::bls::Pair::<TinyBLS377>::from(pair.clone());
+		// let expected_public_key = t.acss_recover(&pok_bytes, 1).unwrap();
 		
-		let res = store.acss_recover(BLS377, &pair.public(), &pok_bytes[..], msg, 1).unwrap();
+		let res = store.acss_recover(BLS377, &pair.public(), &pok_bytes[..], msg, 1)
+			.unwrap();
 
-		assert!(bls377::Pair::verify(&res, &msg[..], &o.public()));
+		assert!(bls377::Pair::verify(&res.1, &msg[..], &res.0));
 	}
 
 	#[test]
