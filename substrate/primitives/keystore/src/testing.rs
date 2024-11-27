@@ -289,6 +289,15 @@ impl Keystore for MemoryKeystore {
 	}
 
 	#[cfg(feature = "bls-experimental")]
+	fn bls377_generate_new(
+		&self,
+		key_type: KeyTypeId,
+		seed: Option<&str>,
+	) -> Result<bls377::Public, Error> {
+		self.generate_new::<bls377::Pair>(key_type, seed)
+	}
+
+	#[cfg(feature = "bls-experimental")]
 	fn bls381_sign(
 		&self,
 		key_type: KeyTypeId,
@@ -310,6 +319,15 @@ impl Keystore for MemoryKeystore {
 		seed: Option<&str>,
 	) -> Result<ecdsa_bls381::Public, Error> {
 		self.generate_new::<ecdsa_bls381::Pair>(key_type, seed)
+	}
+
+	#[cfg(feature = "bls-experimental")]
+	fn ecdsa_bls377_generate_new(
+		&self,
+		key_type: KeyTypeId,
+		seed: Option<&str>,
+	) -> Result<ecdsa_bls377::Public, Error> {
+		self.generate_new::<ecdsa_bls377::Pair>(key_type, seed)
 	}
 
 	#[cfg(feature = "bls-experimental")]

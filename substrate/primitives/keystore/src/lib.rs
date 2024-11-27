@@ -306,6 +306,28 @@ pub trait Keystore: Send + Sync {
 		seed: Option<&str>,
 	) -> Result<ecdsa_bls381::Public, Error>;
 
+	/// Generate a new bls377 key pair for the given key type and an optional seed.
+	///
+	/// Returns an `bls377::Public` key of the generated key pair or an `Err` if
+	/// something failed during key generation.
+	#[cfg(feature = "bls-experimental")]
+	fn bls377_generate_new(
+		&self,
+		key_type: KeyTypeId,
+		seed: Option<&str>,
+	) -> Result<bls377::Public, Error>;
+
+	/// Generate a new (ecdsa,bls377) key pair for the given key type and an optional seed.
+	///
+	/// Returns an `ecdsa_bls377::Public` key of the generated key pair or an `Err` if
+	/// something failed during key generation.
+	#[cfg(feature = "bls-experimental")]
+	fn ecdsa_bls377_generate_new(
+		&self,
+		key_type: KeyTypeId,
+		seed: Option<&str>,
+	) -> Result<ecdsa_bls377::Public, Error>;
+
 	/// Generate a bls381 signature for a given message.
 	///
 	/// Receives [`KeyTypeId`] and a [`bls381::Public`] key to be able to map
@@ -626,6 +648,24 @@ impl<T: Keystore + ?Sized> Keystore for Arc<T> {
 		seed: Option<&str>,
 	) -> Result<ecdsa_bls381::Public, Error> {
 		(**self).ecdsa_bls381_generate_new(key_type, seed)
+	}
+
+	#[cfg(feature = "bls-experimental")]
+	fn bls377_generate_new(
+		&self,
+		key_type: KeyTypeId,
+		seed: Option<&str>,
+	) -> Result<bls377::Public, Error> {
+		(**self).bls377_generate_new(key_type, seed)
+	}
+
+	#[cfg(feature = "bls-experimental")]
+	fn ecdsa_bls377_generate_new(
+		&self,
+		key_type: KeyTypeId,
+		seed: Option<&str>,
+	) -> Result<ecdsa_bls377::Public, Error> {
+		(**self).ecdsa_bls377_generate_new(key_type, seed)
 	}
 
 	#[cfg(feature = "bls-experimental")]
