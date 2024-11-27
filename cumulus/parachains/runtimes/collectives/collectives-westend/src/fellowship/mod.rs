@@ -208,6 +208,7 @@ impl pallet_core_fellowship::Config<FellowshipCoreInstance> for Runtime {
 		>,
 		EnsureCanPromoteTo,
 	>;
+	type FastPromoteOrigin = Self::PromoteOrigin;
 	type EvidenceSize = ConstU32<65536>;
 	type MaxRank = ConstU32<9>;
 }
@@ -332,4 +333,5 @@ impl pallet_treasury::Config<FellowshipTreasuryInstance> for Runtime {
 		sp_core::ConstU8<1>,
 		ConstU32<1000>,
 	>;
+	type BlockNumberProvider = crate::System;
 }
