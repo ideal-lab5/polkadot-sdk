@@ -337,6 +337,10 @@ impl Keystore for LocalKeystore {
 			self.public_keys::<bls381::Pair>(key_type)
 		}
 
+		fn bls377_public_keys(&self, key_type: KeyTypeId) -> Vec<bls377::Public> {
+			self.public_keys::<bls377::Pair>(key_type)
+		}
+
 		/// Generate a new pair compatible with the 'bls381' signature scheme.
 		///
 		/// If `[seed]` is `Some` then the key will be ephemeral and stored in memory.
@@ -366,6 +370,15 @@ impl Keystore for LocalKeystore {
 			msg: &[u8],
 		) -> std::result::Result<Option<bls381::Signature>, TraitError> {
 			self.sign::<bls381::Pair>(key_type, public, msg)
+		}
+
+		fn bls377_sign(
+			&self,
+			key_type: KeyTypeId,
+			public: &bls377::Public,
+			msg: &[u8],
+		) -> std::result::Result<Option<bls377::Signature>, TraitError> {
+			self.sign::<bls377::Pair>(key_type, public, msg)
 		}
 
 		fn ecdsa_bls381_public_keys(&self, key_type: KeyTypeId) -> Vec<ecdsa_bls381::Public> {

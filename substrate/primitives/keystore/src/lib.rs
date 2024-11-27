@@ -280,6 +280,10 @@ pub trait Keystore: Send + Sync {
 	#[cfg(feature = "bls-experimental")]
 	fn bls381_public_keys(&self, id: KeyTypeId) -> Vec<bls381::Public>;
 
+	/// Returns all bls12-377 public keys for the given key type.
+	#[cfg(feature = "bls-experimental")]
+	fn bls377_public_keys(&self, id: KeyTypeId) -> Vec<bls377::Public>;
+
 	/// Returns all (ecdsa,bls12-381) paired public keys for the given key type.
 	#[cfg(feature = "bls-experimental")]
 	fn ecdsa_bls381_public_keys(&self, id: KeyTypeId) -> Vec<ecdsa_bls381::Public>;
@@ -343,6 +347,22 @@ pub trait Keystore: Send + Sync {
 		public: &bls381::Public,
 		msg: &[u8],
 	) -> Result<Option<bls381::Signature>, Error>;
+
+	/// Generate a bls377 signature for a given message.
+	///
+	/// Receives [`KeyTypeId`] and a [`bls377::Public`] key to be able to map
+	/// them to a private key that exists in the keystore.
+	///
+	/// Returns an [`bls377::Signature`] or `None` in case the given `key_type`
+	/// and `public` combination doesn't exist in the keystore.
+	/// An `Err` will be returned if generating the signature itself failed.
+	#[cfg(feature = "bls-experimental")]
+	fn bls377_sign(
+		&self,
+		key_type: KeyTypeId,
+		public: &bls377::Public,
+		msg: &[u8],
+	) -> Result<Option<bls377::Signature>, Error>;
 
 	/// Generate a (ecdsa,bls381) signature pair for a given message.
 	///
@@ -628,6 +648,11 @@ impl<T: Keystore + ?Sized> Keystore for Arc<T> {
 	}
 
 	#[cfg(feature = "bls-experimental")]
+	fn bls377_public_keys(&self, id: KeyTypeId) -> Vec<bls377::Public> {
+		(**self).bls377_public_keys(id)
+	}
+
+	#[cfg(feature = "bls-experimental")]
 	fn ecdsa_bls381_public_keys(&self, id: KeyTypeId) -> Vec<ecdsa_bls381::Public> {
 		(**self).ecdsa_bls381_public_keys(id)
 	}
@@ -676,6 +701,16 @@ impl<T: Keystore + ?Sized> Keystore for Arc<T> {
 		msg: &[u8],
 	) -> Result<Option<bls381::Signature>, Error> {
 		(**self).bls381_sign(key_type, public, msg)
+	}
+
+	#[cfg(feature = "bls-experimental")]
+	fn bls377_sign(
+		&self,
+		key_type: KeyTypeId,
+		public: &bls377::Public,
+		msg: &[u8],
+	) -> Result<Option<bls377::Signature>, Error> {
+		(**self).bls377_sign(key_type, public, msg)
 	}
 
 	#[cfg(feature = "bls-experimental")]

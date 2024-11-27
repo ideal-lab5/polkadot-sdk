@@ -280,6 +280,11 @@ impl Keystore for MemoryKeystore {
 	}
 
 	#[cfg(feature = "bls-experimental")]
+	fn bls377_public_keys(&self, key_type: KeyTypeId) -> Vec<bls377::Public> {
+		self.public_keys::<bls377::Pair>(key_type)
+	}
+
+	#[cfg(feature = "bls-experimental")]
 	fn bls381_generate_new(
 		&self,
 		key_type: KeyTypeId,
@@ -305,6 +310,16 @@ impl Keystore for MemoryKeystore {
 		msg: &[u8],
 	) -> Result<Option<bls381::Signature>, Error> {
 		self.sign::<bls381::Pair>(key_type, public, msg)
+	}
+
+	#[cfg(feature = "bls-experimental")]
+	fn bls377_sign(
+		&self,
+		key_type: KeyTypeId,
+		public: &bls377::Public,
+		msg: &[u8],
+	) -> Result<Option<bls377::Signature>, Error> {
+		self.sign::<bls377::Pair>(key_type, public, msg)
 	}
 
 	#[cfg(feature = "bls-experimental")]
