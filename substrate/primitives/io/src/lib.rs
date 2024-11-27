@@ -108,7 +108,7 @@ use sp_core::{
 };
 
 #[cfg(feature = "bls-experimental")]
-use sp_core::{bls381, ecdsa_bls381};
+use sp_core::{bls377, bls381, ecdsa_bls377, ecdsa_bls381};
 
 #[cfg(feature = "std")]
 use sp_trie::{LayoutV0, LayoutV1, TrieConfiguration};
